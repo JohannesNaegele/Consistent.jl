@@ -3,6 +3,10 @@ uuid = "8b66aa27-75df-4a9a-a8d6-4c101d71c18d"
 authors = ["Johannes Nägele"]
 version = "1.0.0-DEV"
 
+[deps]
+Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+
 [compat]
 julia = "1"
 
