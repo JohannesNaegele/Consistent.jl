@@ -18,7 +18,7 @@ We expect an array of variable names; some however form an Expr instead of being
 function remove_expr(x::Array)
     # we need a deepcopy to avoid issues with recursive changes
     untangled = deepcopy(x)
-    for i in eachindex(x)[end:begin]
+    for i in reverse(eachindex(x)) # FIXME: why?
         if typeof(untangled[i]) == Expr
             untangled = [
                 untangled[1:(i-1)];
