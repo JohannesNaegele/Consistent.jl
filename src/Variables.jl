@@ -39,18 +39,21 @@ end
 """
 Replace variables with their vector (matrix) representation.
 """
-function create_vars(
+function create_vars( # FIXME: read properly
     line::Expr,
     vars::Set,
     endos::Array,
     exos::Array,
-    name = [:endos, :lags, :exos],
+    name = [:endos, :lags, :exos]
 )
     completed_line = deepcopy(line)
     head = line.head
     args = line.args
+    # we expect every variable to be associated with an index!
     if head == :ref
+        # catch unknown symbol
         if args[1] in vars
+            # handle endogenous variables
             if args[1] in endos
                 position = findall(x -> x == args[1], endos)[1]
                 if length(args) == 2
@@ -66,6 +69,7 @@ function create_vars(
                 else
                     error("$(args[2:end]) is not a valid index!")
                 end
+            # handle exogenous variables
             else
                 position = findall(x -> x == args[1], exos)[1]
                 if length(args) == 2
