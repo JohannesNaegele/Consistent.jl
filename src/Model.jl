@@ -9,7 +9,7 @@ mutable struct Model
     parameters::Vector{Symbol}
     math_operators::Set{Symbol}
     equations::Vector{Expr}
-    f!::Function
+    f!
 end
 
 Model() = Model(Symbol[], Symbol[], Symbol[], math_operators, Expr[], x -> nothing)
@@ -27,7 +27,7 @@ function Base.show(io::IO, m::Model)
     print(io, Crayon(foreground = :yellow), descriptors[2]); println(io, Crayon(reset=true), m.exogenous_variables)
     print(io, Crayon(foreground = :blue), descriptors[3]); println(io, Crayon(reset=true), m.parameters)
     print(io, Crayon(foreground = :red), descriptors[4]); print(io, Crayon(reset=true))
-    for i in 1:length(m.equations)
+    for i in eachindex(m.equations)
         print(io, "\n", ' '^max_width, "($i)  ", m.equations[i])
     end
 end
