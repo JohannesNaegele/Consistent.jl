@@ -36,7 +36,7 @@ Macro to specify the model equations. Use `begin ... end`.
         Y = G + C
     end
 """
-macro equations(input...)
+macro equations(input...) # FIXME: refactor
     ex = remove_blocks(MacroTools.striplines(input...))
     Consistent.sfc_model.equations = deepcopy(ex.args)
     function_body = deepcopy(ex.args)
@@ -70,24 +70,8 @@ macro equations(input...)
         error("$(setdiff(variables, found)) unused!")
     end
 
-    # construct difference function of model
-    f! = quote
-        function f!($(name[1]), $(name[2]), $(name[3]), $(name[4]), $(name[5]))
-            nothing
-        end
-    end
-
-    # construct function body
-    for i in eachindex(function_body)
-        function_body[i] = :($(name[1])[$i] = $(function_body[i]))
-    end
-    body = deepcopy(ex)
-    body.args = function_body
-
-    # add function body to function
-    f!.args[2].args[end] = body
-
-    return MacroTools.striplines(:(Consistent.sfc_model.f! = $(f!)))
+    # construct function for residuals of model variables
+    return MacroTools.striplines(:(Consistent.sfc_model.f! = $(construct_residuals(name, function_body, ex))))
 end
 
 """
