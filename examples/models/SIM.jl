@@ -1,4 +1,4 @@
-@model begin
+SIM() = @model begin
     @endogenous Y T YD C H_s H_h H
     @exogenous G
     @parameters θ α_1 α_2
@@ -13,4 +13,4 @@
     end
 end
 
-values = Dict(:θ => 0.2, :α_1 => 0.6, :α_2 => 0.4)
+params = Dict(:θ => 0.2, :α_1 => 0.6, :α_2 => 0.4)

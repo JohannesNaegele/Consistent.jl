@@ -1,4 +1,4 @@
-@model begin
+SIMStoch() = @model begin
     @endogenous G Y T YD C_e C H_s H_h H
     @exogenous G_0 u_G u_T u_C
     @parameters θ α_1 α_2
@@ -15,7 +15,7 @@
     end
 end
 
-values = Dict(
+params = Dict(
     :θ => 0.2, 
     :α_1 => 0.6,
     :α_2 => 0.4,

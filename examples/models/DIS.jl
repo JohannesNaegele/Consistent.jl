@@ -1,4 +1,4 @@
-@model begin
+DIS() = @model begin
     @endogenous y in_T in_e in s_e s N WB UC IN S p NHUC F L_d L_s M_s r_m F_b YD M_h yd_hs C m_h c yd_e_hs
     @exogenous
     @parameters α_0 α_1 α_2 σ_T γ β pr W ϕ r_l add ε
@@ -32,7 +32,7 @@
     end
 end
 
-values = Dict(
+params = Dict(
     :α_0 => 15.0,
     :α_1 => 0.8,
     :α_2 => 0.1,
