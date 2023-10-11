@@ -9,6 +9,7 @@ MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 
 [compat]
+Crayons = "4"
 julia = "1"
 
 [extras]
