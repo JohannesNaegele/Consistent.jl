@@ -8,4 +8,10 @@ include("Variables.jl")
 include("ConstructResiduals.jl")
 include("Macros.jl")
 
-end
+include("models/SIM.jl")
+include("models/SIM_stoch.jl")
+include("models/LP.jl")
+include("models/DIS.jl")
+include("models/PC.jl")
+
+end # module Consistent
