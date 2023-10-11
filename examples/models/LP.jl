@@ -1,5 +1,5 @@
-@model begin
-    LP() = @endogenous Y YD_r T V CG C V_e H_h H_d B_d BL_d B_h BL_h B_s H_s B_cb BL_s ERr_bL r_bL p_bL_e CG_e YD_r_e r_b p_bL
+LP() = @model begin
+    @endogenous Y YD_r T V CG C V_e H_h H_d B_d BL_d B_h BL_h B_s H_s B_cb BL_s ERr_bL r_bL p_bL_e CG_e YD_r_e r_b p_bL
     @exogenous G
     @parameters α_1 α_2 λ_20 λ_22 λ_23 λ_24 λ_30 λ_32 λ_33 λ_34 χ θ r_b_exo p_bL_exo
     @equations begin
@@ -29,3 +29,19 @@
         p_bL = p_bL_exo
     end
 end
+
+# theta = 0.194
+# alpha_1 = 0.8
+# alpha_2 = 0.2
+# lambda_20 = 0.442
+# lambda_22 = 1.1
+# lambda_23 = -1
+# lambda_24 = -0.03
+# lambda_30 = 0.4
+# lambda_32 = -1.
+# lambda_33 = 1.1
+# lambda_34 = -0.03
+# chi = 0.1
+# r_b_exo = 0.03
+# p_bL_exo = 20.
+# G = 20.
