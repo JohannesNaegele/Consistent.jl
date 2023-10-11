@@ -1,4 +1,4 @@
-@model begin
+PC() = @model begin
     @endogenous Y YD T V C H_h B_h B_s H_s B_cb r G
     @exogenous r_exo
     @parameters α_1 α_2 λ_0 λ_1 λ_2 θ
