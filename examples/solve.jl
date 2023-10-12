@@ -10,7 +10,7 @@ function solve(model, lags, exos, params)
     ).zero
 end
 
-# SIM
+# Setup SIM
 model = Consistent.SIM() # load predefined SIM model
 params_dict = Consistent.SIM(defaults=true) # load default parameters
 exos = [20.0] # this is only G
@@ -20,6 +20,14 @@ lags = lags[:, :] # bring in matrix format
 param_values = map(x -> params_dict[x], model.parameters) # get raw parameter values
 solution = solve(model, lags, exos, param_values) # solve first period
 
-# for i in 1:50
-#     solution = solve(model, lags, exos, param_values) # solve first period
-# end
+# Solve model for 50 periods
+for i in 1:50
+    solution = solve(model, lags, exos, param_values) # solve first period
+    lags = hcat(solution, lags)
+end
+
+# Plot Y over time
+plot(
+    1:size(lags, 2),
+    reverse(lags[1, :])
+)
