@@ -1,6 +1,6 @@
 PC() = @model begin
-    @endogenous Y YD T V C H_h B_h B_s H_s B_cb r G
-    @exogenous r_exo
+    @endogenous Y YD T V C H_h B_h B_s H_s B_cb r
+    @exogenous r_exo G
     @parameters α_1 α_2 λ_0 λ_1 λ_2 θ
     @equations begin
         Y = C + G
