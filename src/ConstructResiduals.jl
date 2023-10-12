@@ -11,6 +11,7 @@ function construct_residuals(name, function_body, args)
     end
 
     # add function body to function
-    f!.args[2].args[end] = Expr(:block, deepcopy(args)...)
+    f!.args[2].args[end] = Expr(:block, function_body...)
+    println(f!)
     return f!
 end
