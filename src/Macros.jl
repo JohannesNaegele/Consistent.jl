@@ -4,12 +4,12 @@ Macro to specify the endogenous variables.
 # Example:
     @endogenous Y C
 """
-macro endogenous(input...)
+macro endogenous(input...) # TODO: handle coma-seperated input; assert len endos = nr of equations
     Consistent.sfc_model.endogenous_variables = remove_expr([input...])
 end
 
 """
-Macro to specify the exogenous variables.
+Macro to specify the exogenous variables. Exogenous variables can change over time and are assumed to be readily available from data source.
 
 # Example:
     @exogenous G X
@@ -19,7 +19,7 @@ macro exogenous(input...)
 end
 
 """
-Macro to specify the parameters.
+Macro to specify the parameters. Parameters typically can not change over time and can be calibrated to fit given data.
 
 # Example:
     @parameters α θ
@@ -28,32 +28,17 @@ macro parameters(input...)
     Consistent.sfc_model.parameters = remove_expr([input...])
 end
 
-"""
-Macro to specify the model equations. Use `begin ... end`.
+function build_f!(args)
+    function_body = deepcopy(args)
 
-# Example:
-    @equations begin
-        Y = G + C
-    end
-"""
-macro equations(input...) # FIXME: refactor
-    ex = remove_blocks(MacroTools.striplines(input...))
-    Consistent.sfc_model.equations = deepcopy(ex.args)
-    function_body = deepcopy(ex.args)
-
-    # we need block input (begin ... end)
-    if (ex.head == :block)
-        for i in eachindex(function_body)
-            # check if we really have a proper equation
-            if (function_body[i].head == :(=))
-                function_body[i] =
-                    :($(function_body[i].args[1]) - $(function_body[i].args[2]))
-            else
-                error("Only equalities are supported.")
-            end
+    for i in eachindex(function_body)
+        # check if we really have a proper equation
+        if (function_body[i].head == :(=))
+            function_body[i] =
+                :($(function_body[i].args[1]) - $(function_body[i].args[2]))
+        else
+            error("Only equalities are supported.")
         end
-    else
-        error("Block input expected")
     end
 
     # construct arrays for different types of variables
@@ -71,7 +56,22 @@ macro equations(input...) # FIXME: refactor
     end
 
     # construct function for residuals of model variables
-    return MacroTools.striplines(:(Consistent.sfc_model.f! = $(construct_residuals(name, function_body, ex))))
+    return MacroTools.striplines(:(Consistent.sfc_model.f! = $(construct_residuals(name, function_body, args))))
+end
+
+"""
+Macro to specify the model equations. Use `begin ... end`.
+
+# Example:
+    @equations begin
+        Y = G + C
+    end
+"""
+macro equations(input...) # FIXME: refactor
+    ex = remove_blocks(MacroTools.striplines(input...))
+    @assert (ex.head == :block) "Block input expected" # we need block input (begin ... end)
+    Consistent.sfc_model.equations = deepcopy(ex.args)
+    return build_f!(ex.args)
 end
 
 """
@@ -106,7 +106,7 @@ Equations:
            (7)  H = H_s + H_s[-1] + H[-1]
 ```
 """
-macro model(input...)
+macro model(input...) # FIXME: missing specification (e.g. endo YD) not always working
     global Consistent.sfc_model = Model()
     eval(input...)
     return deepcopy(Consistent.sfc_model)
