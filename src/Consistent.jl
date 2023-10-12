@@ -7,6 +7,7 @@ include("Model.jl")
 include("Variables.jl")
 include("ConstructResiduals.jl")
 include("Macros.jl")
+include("CombineModels.jl")
 
 include("models/SIM.jl")
 include("models/SIM_stoch.jl")
