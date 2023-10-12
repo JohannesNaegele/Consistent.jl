@@ -1,3 +1,5 @@
+import Base: +
+
 function +(model1::Model, model2::Model)
     undetermined = findall(in(model2.endogenous_variables), model1.endogenous_variables)
     @assert isempty(undetermined) "The endogenous variables $(model1[undetermined]) appear twice"
