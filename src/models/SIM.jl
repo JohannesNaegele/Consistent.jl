@@ -13,8 +13,8 @@ SIM() = @model begin
     end
 end
 
-function SIM(; defaults=false)
-    if defaults
+function SIM(bool)
+    if bool
         Dict(:θ => 0.2, :α_1 => 0.6, :α_2 => 0.4)
     else
         SIM()
