@@ -10,8 +10,6 @@ function +(model1::Model, model2::Model)
     sfc_model.endogenous_variables = vcat(model1.endogenous_variables, model2.endogenous_variables)
     sfc_model.exogenous_variables = vcat(exos1, exos2)
     sfc_model.parameters = vcat(model1.parameters, model2.parameters)
-    println(typeof(sfc_model.math_operators))
-    println(typeof(model1.math_operators))
     sfc_model.math_operators = model1.math_operators # FIXME: does this make sense?
     sfc_model.equations = equations
     eval(build_f!(equations))
