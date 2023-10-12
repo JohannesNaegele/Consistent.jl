@@ -1,6 +1,9 @@
 using Consistent
 using NLsolve
-using Plots
+using DataFrames
+using Gadfly
+using Pipe
+Gadfly.push_theme(:dark)
 
 function solve(model, lags, exos, params)
     nlsolve(
@@ -12,7 +15,7 @@ end
 
 # Setup SIM
 model = Consistent.SIM() # load predefined SIM model
-params_dict = Consistent.SIM(defaults=true) # load default parameters
+params_dict = Consistent.SIM(true) # load default parameters
 exos = [20.0] # this is only G
 exos = exos[:, :] # bring in matrix format
 lags = fill(0.0, length(model.endogenous_variables)) # lagged values of endogenous variables are all 0.0
@@ -26,8 +29,15 @@ for i in 1:50
     lags = hcat(solution, lags)
 end
 
-# Plot Y over time
-plot(
-    1:size(lags, 2),
-    reverse(lags[1, :])
-)
+df = DataFrame(reverse(lags, dims=2)', model.endogenous_variables)
+df[!, :period] = 1:nrow(df)
+df_long = @pipe df |>
+    select(_, [:Y, :C, :YD, :period]) |>
+    stack(_, Not(:period), variable_name=:variable) |>
+    plot(
+        _,
+        x=:period,
+        y=:value,
+        color=:variable,
+        Geom.line
+    )
