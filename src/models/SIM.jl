@@ -13,4 +13,10 @@ SIM() = @model begin
     end
 end
 
-params = Dict(:θ => 0.2, :α_1 => 0.6, :α_2 => 0.4)
+function SIM(; defaults=false)
+    if defaults
+        Dict(:θ => 0.2, :α_1 => 0.6, :α_2 => 0.4)
+    else
+        SIM()
+    end
+end
