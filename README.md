@@ -7,3 +7,6 @@ This package provides solution and calibration methods for stock-flow consistent
 
 ## Basic usage
 
+## Remarks
+
+The instantiation of a model is not thread-safe.
