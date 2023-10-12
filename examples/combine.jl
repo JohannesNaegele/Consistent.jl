@@ -27,4 +27,4 @@ PC_hh = @model begin
     end
 end
 
-PC_complete = PC_gdp + PC_hh # check: endos not given twice
+PC_complete = PC_gdp + PC_hh
