@@ -1,7 +1,7 @@
 DIS() = @model begin
-    @endogenous y in_T in_e in s_e s N WB UC IN S p NHUC F L_d L_s M_s r_m F_b YD M_h yd_hs C m_h c yd_e_hs
+    @endogenous y, in_T, in_e, in, s_e, s, N, WB, UC, IN, S, p, NHUC, F, L_d, L_s, M_s, r_m, F_b, YD, M_h, yd_hs, C, m_h, c, yd_e_hs
     @exogenous
-    @parameters α_0 α_1 α_2 σ_T γ β pr W ϕ r_l add ε
+    @parameters α_0, α_1, α_2, σ_T, γ, β, pr, W, ϕ, r_l, add, ε
     @equations begin
         y = s_e + (in_e[0] - in[-1])
         in_T = σ_T * s_e

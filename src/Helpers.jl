@@ -69,3 +69,17 @@ function find_symbols(line::Expr)
     end
     return setdiff(found, math_operators)
 end
+
+"""
+Handle input variables in
+- array form
+- coma-seperated form
+- whitespace seperated form
+"""
+function handle_input(input)
+    if (length(input) == 1) && isa(input[1], Expr) && (input[1].head in (:vect, :tuple))
+        input[1].args
+    else
+        input
+    end
+end

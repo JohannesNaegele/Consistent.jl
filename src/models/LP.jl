@@ -1,7 +1,7 @@
 LP() = @model begin
-    @endogenous Y YD_r T V CG C V_e H_h H_d B_d BL_d B_h BL_h B_s H_s B_cb BL_s ERr_bL r_bL p_bL_e CG_e YD_r_e r_b p_bL
+    @endogenous Y, YD_r, T, V, CG, C, V_e, H_h, H_d, B_d, BL_d, B_h, BL_h, B_s, H_s, B_cb, BL_s, ERr_bL, r_bL, p_bL_e, CG_e, YD_r_e, r_b, p_bL
     @exogenous G
-    @parameters α_1 α_2 λ_20 λ_22 λ_23 λ_24 λ_30 λ_32 λ_33 λ_34 χ θ r_b_exo p_bL_exo
+    @parameters α_1, α_2, λ_20, λ_22, λ_23, λ_24, λ_30, λ_32, λ_33, λ_34, χ, θ, r_b_exo, p_bL_exo
     @equations begin
         Y = C + G
         YD_r = Y - T + r_b[-1] * B_h[-1] + BL_h[-1]

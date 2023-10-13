@@ -3,9 +3,9 @@ Note: This is some old model where I don't know the origin anymore.
 It is probably related to some Peter Bofinger textbook.
 """
 BMW() = @model begin
-    @endogenous C_s C_d I_s I_d N_s N_d L_s L_d r_l r_m K K_T DA
+    @endogenous C_s, C_d, I_s, I_d, N_s, N_d, L_s, L_d, r_l, r_m, K, K_T, DA
     @exogenous r_exo
-    @parameters α_0 α_1_w α_1_r α_2
+    @parameters α_0, α_1_w, α_1_r, α_2
     @equations begin
         C_s = C_d
         I_s = I_d

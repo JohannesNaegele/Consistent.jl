@@ -4,8 +4,9 @@ Macro to specify the endogenous variables.
 # Example:
     @endogenous Y C
 """
-macro endogenous(input...) # TODO: handle coma-seperated input; assert len endos = nr of equations
-    Consistent.sfc_model.endogenous_variables = remove_expr([input...])
+macro endogenous(input...)
+    # convert potential tuple to array
+    Consistent.sfc_model.endogenous_variables = remove_expr([handle_input(input)...])
 end
 
 """
@@ -15,7 +16,8 @@ Macro to specify the exogenous variables. Exogenous variables can change over ti
     @exogenous G X
 """
 macro exogenous(input...)
-    Consistent.sfc_model.exogenous_variables = remove_expr([input...])
+    # convert potential tuple to array
+    Consistent.sfc_model.exogenous_variables = remove_expr([handle_input(input)...])
 end
 
 """
@@ -25,7 +27,8 @@ Macro to specify the parameters. Parameters typically can not change over time a
     @parameters α θ
 """
 macro parameters(input...)
-    Consistent.sfc_model.parameters = remove_expr([input...])
+    # convert potential tuple to array
+    Consistent.sfc_model.parameters = remove_expr([handle_input(input)...])
 end
 
 function build_f!(args)

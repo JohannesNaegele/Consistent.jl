@@ -1,7 +1,7 @@
 SIMStoch() = @model begin
-    @endogenous G Y T YD C_e C H_s H_h H
-    @exogenous G_0 u_G u_T u_C
-    @parameters θ α_1 α_2 α_3
+    @endogenous G, Y, T, YD, C_e, C, H_s, H_h, H
+    @exogenous G_0, u_G, u_T, u_C
+    @parameters θ, α_1, α_2, α_3
     @equations begin
         G = G_0 + u_G
         Y = C + G
