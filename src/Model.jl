@@ -2,6 +2,10 @@ using Crayons
 
 """
 Type for a stock-flow consistent model.
+
+The most important part is the automatically generated function `f!` which has the following form:
+    model.f!(residuals, endos, lags, exos, params)
+Intuitively, we evaluate our function `f(endos, ...)`` (which should equal zero) into residuals.
 """
 mutable struct Model
     endogenous_variables::Vector{Symbol}

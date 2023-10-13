@@ -61,7 +61,7 @@ function create_vars( # FIXME: read properly
                         completed_line.args = [name[1], :($position)]
                     else
                         if args[2] < 0
-                            completed_line.args = [name[2], :($position), :($(-args[2]))]
+                            completed_line.args = [name[2], :($position), Expr(:call, :-, :end, args[2] + 1)]
                         else
                             error("future indices are not allowed!")
                         end
@@ -74,7 +74,7 @@ function create_vars( # FIXME: read properly
                 position = findall(x -> x == args[1], exos)[1]
                 if length(args) == 2
                     if args[2] <= 0
-                        completed_line.args = [name[3], :($position), :($(-args[2] + 1))]
+                        completed_line.args = [name[3], :($position), Expr(:call, :-, :end, args[2])]
                     else
                         error("future indices are not allowed!")
                     end
