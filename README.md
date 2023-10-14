@@ -9,4 +9,5 @@ This package provides solution and calibration methods for stock-flow consistent
 
 ## Remarks
 
-The instantiation of a model is not thread-safe.
+- The instantiation of a model is not thread-safe yet.
+- The point I would like to see proven: Julia is a long-term Pareto improvement over R, Matlab et al.
