@@ -11,12 +11,11 @@ mutable struct Model
     endogenous_variables::Vector{Symbol}
     exogenous_variables::Vector{Symbol}
     parameters::Vector{Symbol}
-    math_operators::Set{Symbol}
     equations::Vector{Expr}
     f!
 end
 
-Model() = Model(Symbol[], Symbol[], Symbol[], math_operators, Expr[], x -> nothing)
+Model() = Model(Symbol[], Symbol[], Symbol[], Expr[], x -> nothing)
 
 const math_operators = Set([:+, :-, :*, :/, :÷, :\, :^, :%])
 const name = [:diff, :endos, :lags, :exos, :params]
