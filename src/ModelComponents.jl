@@ -8,9 +8,21 @@ end
 
 Variables(x::OrderedDict) = Variables([k for (k, v) in x])
 Variables(x::Variables) = x
+Variables() = Variables(Symbol[])
 
 MacroTools.@forward Variables.variables Base.getindex, Base.setindex!
 Base.size(x::Variables) = Base.size(x.variables)
+
+macro variables(input...)
+    if (input[1] isa Expr) && (input[1].head == :block)
+        @assert (length(input) == 1) "Can't handle several blocks"
+        args = input[1].args
+        vars = filter(e -> isa(e, Symbol), args)
+        return Variables(deepcopy(vars))
+    else # convert potential tuple to array
+        return Variables(remove_expr([handle_input(input)...]))
+    end
+end
 
 struct Equations
     expr::Expr
