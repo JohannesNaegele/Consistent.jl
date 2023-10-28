@@ -160,9 +160,17 @@ For that, the package will iteratively take the first unknown symbol from each e
 Internally, we just generate a function `f!` for our model which can be used together with an arbitrary root finding solver:
 
 ```julia
-trick
+function f!(diff, endos, lags, exos, params)
+    diff[1] = endos[1] - (endos[4] + exos[1, end - 0])
+    diff[2] = endos[2] - params[1] * endos[1]
+    diff[3] = endos[3] - (endos[1] - endos[2])
+    diff[4] = endos[4] - (params[2] * endos[3] + params[3] * lags[7, end - 0])
+    diff[5] = (endos[5] + lags[5, end - 0]) - (exos[1, end - 0] - endos[2])
+    diff[6] = (endos[6] + lags[6, end - 0]) - (endos[3] - endos[4])
+    diff[7] = endos[7] - (endos[5] + lags[5, end - 0] + lags[7, end - 0])
+end
 ```
 
 ## Remarks
 
-The instantiation of a model is not thread-safe.
+Feel free to ask questions and report bugs via issues!
