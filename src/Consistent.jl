@@ -1,7 +1,7 @@
 module Consistent
 
-export @model, @endogenous, @exogenous, @parameters, @equations, @parameters
-export solve
+export @parameters, @equations, @variables
+export model, solve
 
 include("Helpers.jl")
 include("ModelComponents.jl")
