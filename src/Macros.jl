@@ -1,37 +1,7 @@
-"""
-Macro to specify the endogenous variables.
-
-# Example:
-    @endogenous Y C
-"""
-macro endogenous(input...)
-    # convert potential tuple to array
-    Consistent.sfc_model.endogenous_variables = remove_expr([handle_input(input)...])
-end
-
-"""
-Macro to specify the exogenous variables. Exogenous variables can change over time and are assumed to be readily available from data source.
-
-# Example:
-    @exogenous G X
-"""
-macro exogenous(input...)
-    # convert potential tuple to array
-    Consistent.sfc_model.exogenous_variables = remove_expr([handle_input(input)...])
-end
-
-"""
-Macro to specify the parameters. Parameters typically can not change over time and can be calibrated to fit given data.
-
-# Example:
-    @parameters α θ
-"""
-macro parameters(input...)
-    # convert potential tuple to array
-    Consistent.sfc_model.parameters = remove_expr([handle_input(input)...])
-end
-
-function build_f!(args)
+function build_f!(endos, exos, params, args)
+    endos = endos.variables
+    exos = exos.variables
+    params = params.variables
     function_body = deepcopy(args)
 
     for i in eachindex(function_body)
@@ -46,9 +16,6 @@ function build_f!(args)
 
     # construct arrays for different types of variables
     found = vars(function_body) # all found variables
-    endos = Consistent.sfc_model.endogenous_variables # endogenous variables
-    exos = Consistent.sfc_model.exogenous_variables # exogenous variables
-    params = Consistent.sfc_model.parameters # parameters
     variables = union(Set(endos), Set(exos), Set(params)) # all variables
 
     # check for unused variables from specification
@@ -59,22 +26,7 @@ function build_f!(args)
     end
 
     # construct function for residuals of model variables
-    return MacroTools.striplines(:(Consistent.sfc_model.f! = $(construct_residuals(name, function_body, args))))
-end
-
-"""
-Macro to specify the model equations. Use `begin ... end`.
-
-# Example:
-    @equations begin
-        Y = G + C
-    end
-"""
-macro equations(input...) # FIXME: refactor
-    ex = remove_blocks(MacroTools.striplines(input...))
-    @assert (ex.head == :block) "Block input expected" # we need block input (begin ... end)
-    Consistent.sfc_model.equations = deepcopy(ex.args)
-    return build_f!(ex.args)
+    return MacroTools.striplines(:(Consistent.f! = $(construct_residuals(name, function_body, args))))
 end
 
 """
@@ -109,8 +61,17 @@ Equations:
            (7)  H = H_s + H_s[-1] + H[-1]
 ```
 """
-macro model(input...) # FIXME: missing specification (e.g. endo YD) not always working
-    global Consistent.sfc_model = Model()
-    eval(input...)
-    return deepcopy(Consistent.sfc_model)
+function model(; endos=nothing, exos=Variables(), params::OrderedDict, eqs, verbose=false)
+    parameters = Variables(params)
+    if verbose
+        println(build_f!(endos, exos, parameters, eqs.exprs))
+    end
+    eval(build_f!(endos, exos, parameters, eqs.exprs))
+    return Model(
+        endos,
+        exos,
+        parameters,
+        eqs,
+        deepcopy(Consistent.f!)
+    )
 end
