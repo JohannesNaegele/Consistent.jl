@@ -7,15 +7,13 @@ The most important part is the automatically generated function `f!` which has t
     model.f!(residuals, endos, lags, exos, params)
 Intuitively, we evaluate our function `f(endos, ...)`` (which should equal zero) into residuals.
 """
-mutable struct Model
-    endogenous_variables::Vector{Symbol}
-    exogenous_variables::Vector{Symbol}
-    parameters::Vector{Symbol}
-    equations::Vector{Expr}
+struct Model
+    endogenous_variables::Variables
+    exogenous_variables::Variables
+    parameters::Variables
+    equations::Equations
     f!
 end
-
-Model() = Model(Symbol[], Symbol[], Symbol[], Expr[], x -> nothing)
 
 const math_operators = Set([:+, :-, :*, :/, :÷, :\, :^, :%])
 const name = [:diff, :endos, :lags, :exos, :params]
