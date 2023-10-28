@@ -1,8 +1,8 @@
-SIM() = @model begin
-    @endogenous Y T YD C H_s H_h H
-    @exogenous G
-    @parameters θ α_1 α_2
-    @equations begin
+SIM() = model(
+    endos = @variables(Y, T, YD, C, H_s, H_h, H),
+    exos = @variables(G),
+    params = @variables(θ, α_1, α_2),
+    eqs = @equations begin
         Y = C + G
         T = θ * Y
         YD = Y - T
@@ -11,7 +11,7 @@ SIM() = @model begin
         H_h + H_h[-1] = YD - C
         H = H_s + H_s[-1] + H[-1]
     end
-end
+)
 
 function SIM(bool)
     if bool
