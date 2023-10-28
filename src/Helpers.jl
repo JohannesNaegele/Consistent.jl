@@ -7,6 +7,9 @@ Thus, we decompose expressions like :(a in b) in individual Symbols.
 function remove_expr(x::Expr)
     if x.head == :call
         return [x.args[2], x.args[1], x.args[3]]
+    # TODO: test whether this might have unintentional side effects
+    elseif x.head == :block
+        return x.args
     else
         error("Can not handle $x")
     end
