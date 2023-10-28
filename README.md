@@ -7,6 +7,162 @@ This package provides solution and calibration methods for stock-flow consistent
 
 ## Basic usage
 
+### Model definition
+
+Consider SIM from Godley and Lavoie 2007:
+
+```julia
+# Define parameter values
+params_dict = @parameters begin
+    θ = 0.2
+    α_1 = 0.6
+    α_2 = 0.4
+end
+
+# Define endogenous variables
+endogenous = @variables Y, T, YD, C, H_s, H_h, H
+# Define exogenous variables
+exogenous = @variables G
+
+# Define model
+my_first_model = model(
+    endos = endogenous,
+    exos = exogenous,
+    params = params_dict,
+    equations = @equations begin
+        Y = C + G
+        T = θ * Y
+        YD = Y - T
+        C = α_1 * YD + α_2 * H[-1]
+        H_s + H_s[-1] = G - T
+        H_h + H_h[-1] = YD - C
+        H = H_s + H_s[-1] + H[-1]
+    end
+)
+```
+
+The difference between parameters and exogenous parameters is that the latter *can change over time* which is especially important if they appear in lagged terms. In this case, we need to provide several values for one exogenous variable.
+
+Note also that the model is not aware of any concrete values of parameters or exogenous variables. Instead, data is always supplied externaly to solution/calibration functions. Thus, `params_dict` is just syntactical sugar for `@variables [k for (k, v) in params_dict]`.
+
+### Model solution
+If we want to solve a model we need data on
+1. exogenous variables (and their lags)
+2. lags of endogenous variables
+3. parameters
+
+```julia
+# data on exogenous parameter G
+exos = [20.0][:, :]
+# lagged values of endogenous variables are all 0.0
+lags = fill(0.0, length(my_first_model.endogenous_variables), 1)
+# get raw parameter values
+param_values = map(x -> params_dict[x], my_first_model.parameters)
+```
+
+
+
+```julia
+# Solve model for 59 periods
+for i in 1:59
+    solution = solve(my_first_model, lags, exos, param_values)
+    lags = hcat(lags, solution)
+end
+```
+
+### Data handling and plotting
+`DataFrames` and `Pipe` give us functionality similar to R's `dplyr`; the package ```Gadfly``` is very similar to R's `ggplots2`:
+
+```julia
+using DataFrames
+using Pipe
+using Gadfly
+
+# Convert results to DataFrame
+df = DataFrame(lags', my_first_model.endogenous_variables)
+# Add time column
+df[!, :period] = 1:nrow(df)
+# Select variables, convert to long format, and plot variables
+@pipe df |>
+    select(_, [:Y, :C, :YD, :period]) |>
+    stack(_, Not(:period), variable_name=:variable) |>
+    plot(
+        _,
+        x=:period,
+        y=:value,
+        color=:variable,
+        Geom.line
+    )
+```
+
+An example with actual data can be found here.
+
+## Advanced usage
+
+### Probabilistic models
+
+### Model calibration
+
+
+
+## Syntax
+
+There are plenty different syntax options for defining variables enabled:
+
+```julia
+# As single variables (slurping)
+endogenous = @variables Y T YD C H_s H_h H
+# As tuple
+endogenous = @variables Y, T, YD, C, H_s, H_h, H
+# As array
+endogenous = @variables [
+    Y,
+    T,
+    YD,
+    C,
+    H_s,
+    H_h,
+    H
+]
+# As block
+endogenous = @variables begin
+    Y
+    T
+    YD
+    C
+    H_s
+    H_h
+    H
+end
+```
+
+Also, for users which find the specification of endogenous variables too tedious it is possible to let the package infer them:
+
+```julia
+my_first_model = model(
+    exos = exogenous, # leave out endos
+    params = params_dict,
+    equations = @equations begin
+        Y = C + G
+        T = θ * Y
+        YD = Y - T
+        C = α_1 * YD + α_2 * H[-1]
+        H_s + H_s[-1] = G - T
+        H_h + H_h[-1] = YD - C
+        H = H_s + H_s[-1] + H[-1]
+    end
+)
+```
+For that, the package will iteratively take the first unknown symbol from each equation. However this feature should obviously be treated with caution.
+
+## Internals
+
+Internally, we just generate a function `f!` for our model which can be used together with an arbitrary root finding solver:
+
+```julia
+trick
+```
+
 ## Remarks
 
 The instantiation of a model is not thread-safe.
