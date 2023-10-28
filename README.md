@@ -173,4 +173,6 @@ end
 
 ## Remarks
 
+Currently the model instantiation is not thread-safe.
+
 Feel free to ask questions and report bugs via issues!
