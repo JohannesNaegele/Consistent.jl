@@ -45,6 +45,8 @@ The difference between parameters and exogenous parameters is that the latter *c
 
 Note also that the model is not aware of any concrete values of parameters or exogenous variables. Instead, data is always supplied externaly to solution/calibration functions. Thus, `params_dict` is just syntactical sugar for `@variables [k for (k, v) in params_dict]`.
 
+Lastly, the specification of endogenous variables is *optional* and might be omitted if is much effort for larger models. However, it enables easier debugging. If not endogenous variables are not specified, the package will assume the symbol farthest on the left hand side of each equation to be endogenous.
+
 ### Model solution
 If we want to solve a model we need data on
 1. exogenous variables (and their lags)
@@ -107,7 +109,7 @@ An example with actual data can be found here.
 
 ## Syntax
 
-There are plenty different syntax options for defining variables enabled:
+There are plenty different syntax options for defining variables *outside the model function* enabled:
 
 ```julia
 # As single variables (slurping)
@@ -136,24 +138,7 @@ endogenous = @variables begin
 end
 ```
 
-Also, for users which find the specification of endogenous variables too tedious it is possible to let the package infer them:
-
-```julia
-my_first_model = model(
-    exos = exogenous, # leave out endos
-    params = params_dict,
-    equations = @equations begin
-        Y = C + G
-        T = θ * Y
-        YD = Y - T
-        C = α_1 * YD + α_2 * H[-1]
-        H_s + H_s[-1] = G - T
-        H_h + H_h[-1] = YD - C
-        H = H_s + H_s[-1] + H[-1]
-    end
-)
-```
-For that, the package will iteratively take the first unknown symbol from each equation. However this feature should obviously be treated with caution.
+Inside the function we need parantheses and can not use whitespace seperation.
 
 ## Internals
 
