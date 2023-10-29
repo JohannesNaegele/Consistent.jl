@@ -10,7 +10,7 @@ aggr = @equations begin
     U = Yk / Kk[-1] # 11.8: Capital utilization proxy
     RRl = ((1 + Rl) / (1 + PI)) - 1 # 11.9: Real interest rate on loans
     PI = (P - P[-1]) / P[-1] # 11.10: Rate of price inflation
-    Ik = (Kk - Kk[-1]) + δ * Kk[-1] # 11.11 : Real gross investment
+    Ik = (Kk - Kk[-1]) + δ * Kk[-1] # 11.11: Real gross investment
 end
 
 # Box 11.2: Firms equations
@@ -20,69 +20,60 @@ firms1 = @equations begin
     IN = INk * UC # 11.14: Inventories valued at current cost
     INV = Ik * P # 11.15: Nominal gross investment
     K = Kk * P # 11.16: Nominal value of fixed capital
-    Y = Sk * P + (INk - INk[-1]) * UC # 11.17 : Nominal GDP
+    Y = Sk * P + (INk - INk[-1]) * UC # 11.17: Nominal GDP
 end
 
 # Box 11.3: Firms equations
 firms2 = @equations begin
-    ωₜ = exp(ω₀ + ω₁ * log(PR) + ω₂ * log(ER + z3 * (1 - ER) - z4 * BANDₜ + z5 * BANDᵦ))  # 11.17: Real exchange rate
-    ER = N[-1] / Nfe[-1]  # 11.18: Exchange rate
-    z3a = ER > (1 - BANDᵦ) ? 1: 0  # 11.19a: Upper band activation
-    z3b = ER <= (1 + BANDₜ) ? 1: 0  # 11.19b: Lower band activation
-    z3 = z3a * z3b  # 11.20: Band activation
-    z4 = ER > (1 + BANDₜ) ? 1: 0  # 11.21: Upper band overshoot
-    z5 = ER < (1 - BANDᵦ) ? 1: 0  # 11.22: Lower band undershoot
-    W = W[-1] + ω₃ * (ωₜ * P[-1] - W[-1])  # 11.23: Wage adjustment
-    PR = PR[-1] * (1 + GRpr)  # 11.24: Productivity
-    Nt = Yk / PR  # 11.25: Employment target
-    N = N[-1] + ηₙ * (Nt - N[-1])  # 11.26: Employment
-    WB = N * W  # 11.27: Wage bill
-    UC = WB / Yk  # 11.28: Unit labor costs
-    NUC = W / PR  # 11.29: Normal unit costs
-    NHUC = (1 - σₙ) * NUC + σₙ * (1 + Rln[-1]) * NUC[-1]  # 11.30: Historical unit costs
-    P = (1 + ϕ) * NHUC  # 11.31: Price level
-    ϕ = ϕ[-1] + ε₂ * (ϕₜ[-1] - ϕ[-1])  # 11.32: Markup adjustment
-    ϕₜ = (FUft + FDf + Rl[-1] * (Lfd[-1] - IN[-1])) / ((1 - σₛₑ) * S)  # 11.33: Target markup
-    Lfd = Lfd[-1] + FDf - P * INV / (1 + Rl)  # 11.34: Funding need for firm debt
-    FDf = ϵ₃ * (P * INV - Lfd[-1] * (1 + Rl))  # 11.35: Change in funding need
-    Lft = Lf - FUft  # 11.36: Target for liquid assets of firms
-    FUf = Lft - FUft  # 11.37: Funding need for liquid assets
-    Lf = ϵ₄ * (P * S - W * N - T)  # 11.38: Liquid assets of firms
-    T = τ * Y  # 11.39: Taxes
-    Ck = θ * (W * N + DIV - T + TR)  # 11.40: Consumption out of income
-    Ik = (1 - θ) * (W * N + DIV - T + TR)  # 11.41: Investment out of income
-    TR = TRt * Y  # 11.42: Transfers
-    DIV = πt * Y  # 11.43: Dividends
-    Gk = Gt * Y  # 11.44: Government consumption
-    Rl = max(0, Rb + πt - θₑ * (πt - πtₑ))  # 11.45: Lending rate
-    πtₑ = ϵ₅ * πt + (1 - ϵ₅) * πtₑ  # 11.46: Expected inflation
-    Rb = Rbₜ * (1 + ψ * (D / Y - Dₜ / Y))  # 11.47: Base rate
-    D = Lfd + Lh  # 11.48: Total debt
-    Lh = Lh[-1] + Ch - Ph * IH / (1 + Rh)  # 11.49: Funding need for household debt
-    Ch = ϵ₆ * (Ph * IH - Lh[-1] * (1 + Rh))  # 11.50: Change in funding need for households
-    Ht = H - FUht  # 11.51: Target for liquid assets of households
-    FUh = Ht - FUht  # 11.52: Funding need for liquid assets of households
-    H = ϵ₇ * (Ph * Ck + Ph * Gk - WB - T)  # 11.53: Liquid assets of households
-    Rh = max(0, Rb + πt - θₘ * (πt - πtₘ))  # 11.54: Household lending rate
-    πtₘ = ϵ₈ * πt + (1 - ϵ₈) * πtₘ  # 11.55: Expected inflation for households
-    IH = ι * H  # 11.56: Housing investment
-    Ph = max(0, Ph[-1] + ϵ₉ * (UC * Yk - Ph[-1] * IH))  # 11.57: House price
-    UC = α * (Ck + Gk) + β * IH + (1 - α - β) * Yk  # 11.58: Utilized capacity
-    Yk = Ske + INke - INk[-1]  # 11.59: Real output
-    INk = δ * K  # 11.60: Capital depreciation
-    Ske = min(Sk, Dk / P)  # 11.61: Effective supply
-    Sk = ξ * Yk  # 11.62: Supply
-    Dk = Lfd + Ch + FUf + FUh + Ph * IH  # 11.63: Demand for credit
-    K = K[-1] + Ik - INk  # 11.64: Capital stock
-    WB = W * N  # 11.65: Wage bill
-    W = Wp * P  # 11.66: Nominal wage
-    Wp = Wp[-1] * (1 + λ * (πt - πtₑ))  # 11.67: Real wage target
-    πt = (P - P[-1]) / P[-1]  # 11.68: Inflation
-    P = P[-1] * (1 + μ * (UC - 1))  # 11.69: Price level
-    N = Ns  # 11.70: Employment
-    Ns = Yk / A  # 11.71: Supply of labor
-    A = A[-1] * (1 + g)  # 11.72: Labor productivity
-    g = gₜ * (1 + χ * (UC - 1))  # 11.73: Growth rate of productivity
+    ωₜ = exp(ω₀ + ω₁ * log(PR) + ω₂ * log(ER + z3 * (1 - ER) - z4 * BANDₜ + z5 * BANDᵦ)) # 11.18: Real wage aspirations
+    ER = N[-1] / Nfe[-1] # 11.19: Employment rate
+    # 11.20: Switch variables
+    z3 = ((1 + BANDᵦ) < ER <= (1 + BANDₜ)) ? 1: 0 # Band activation
+    z4 = ER > (1 + BANDₜ) ? 1: 0 # Upper band overshoot
+    z5 = ER < (1 - BANDᵦ) ? 1: 0 # Lower band undershoot
+    W = W[-1] + ω₃ * (ωₜ * P[-1] - W[-1]) # 11.21: Nominal wage
+    PR = PR[-1] * (1 + GRpr) # 11.22: Labor productivity
+    Nt = Yk / PR # 11.23: Desired employment
+    N = N[-1] + ηₙ * (Nt - N[-1]) # 11.24: Actual employment --> etan not in the book
+    WB = N * W # 11.25: Nominal wage bill
+    UC = WB / Yk # 11.26: Actual unit cost
+    NUC = W / PR # 11.27: Normal unit cost
+    NHUC = (1 - σₙ) * NUC + σₙ * (1 + Rln[-1]) * NUC[-1] # 11.28: Normal historic unit cost
+end
+
+# Box 11.4: Firms equations
+firms3 = @equations begin
+    P = (1 + ϕ) * NHUC # 11.29: Normal-cost pricing
+    ϕ = ϕ[-1] + ε₂ * (ϕₜ[-1] - ϕ[-1]) # 11.30: Actual mark-up --> ε₂ not in the book
+    ϕₜ = (FUft + FDf + Rl[-1] * (Lfd[-1] - IN[-1])) / ((1 - σₛₑ) * S) # 11.32: Expected historical costs
+    HCe = (1 - σₛₑ) * Ske * UC + (1 + Rl[-1]) * σₛₑ * Ske * UC[-1] # 11.33: Opening inventories to expected sales ratio
+    σₛₑ = INk[-1] / Ske # 11.34: Planned entrepeneurial profits of firms
+    Fft = FUft + FDf + Rl[-1] * (Lfd[-1] - IN[-1]) # 11.34: Planned entrepeneurial profits of firms
+    FUft = ψᵤ * INV[-1] # 11.35: Planned retained earnings of firms
+    FDf = ψd * Ff[-1] # 11.36: Dividends of firms
+end
+
+# Box 11.5: Firms equations
+firms4 = @equations begin
+    Ff = S - WB + (IN - IN[-1]) - Rl[-1]*IN[-1] # 11.37: Realized entrepeneurial profits
+    FUf = Ff - FDf - Rl[-1]*(Lfd[-1] - IN[-1]) + Rl[-1]*NPL # 11.38: Retained earnings of firms
+    Lfd = Lfd[-1] + INV + (IN - IN[-1]) - FUf - (Eks - Eks[-1])*Pe - NPL # 11.39: Demand for loans by firms
+    NPL = NPLk * Lfs[-1] # 11.40: Defaulted loans
+
+end
+
+@equations begin
+    # 11.64: Demand for bills
+    Bhd = Vfma[-1] * (λ20 + λ22 * Rb[-1] - λ21 * Rm[-1] - λ24 * Rk[-1] - λ23 * Rbl[-1] - λ25 * (YDr / V))
+    # 11.65: Demand for bonds
+    BLd = Vfma[-1] * (λ30 - λ32 * Rb[-1] - λ31 * Rm[-1] - λ34 * Rk[-1] + λ33 * Rbl[-1] - λ35 * (YDr / V)) / Pbl
+    # 11.66: Demand for equities - normalized to get the price of equitities
+    Pe = Vfma[-1] * (λ40 - λ42 * Rb[-1] - λ41 * Rm[-1] + λ44 * Rk[-1] - λ43 * Rbl[-1] - λ45 * (YDr / V)) / Ekd
+    Mh = Vfma - Bhd - Pe * Ekd - Pbl * BLd + Lhd # 11.67: Money deposits - as a residual
+    Vfma = V - Hhd - OFb # 11.68: Investible wealth
+    VfmaA = Mh + Bhd + Pbl * BLd + Pe * Ekd 
+    Hhd = λc * CONS # 11.69: Households demand for cash
+    Ekd = Eks # 11.70: Stock market equilibrium
 end
 
 # Box 11.9: Governments equations
@@ -172,65 +163,65 @@ banks2 = @equations begin
 end
 
 param_dict = @parameters begin
-  alpha1 = 0.75
-  alpha2 = 0.064
-  beta = 0.5
-  betab = 0.4
-  gamma = 0.15
-  gamma0 = 0.00122
-  gammar = 0.1
-  gammau = 0.05
-  delta = 0.10667
-  deltarep = 0.1
-  eps = 0.5
-  eps2 = 0.8
-  epsb = 0.25
-  epsrb = 0.9
-  eta0 = 0.07416
-  etan = 0.6
-  etar = 0.4
-  theta = 0.22844
-  # lambda10 = -0.17071
-  # lambda11 = 0
-  # lambda12 = 0
-  # lambda13 = 0
-  # lambda14 = 0
-  # lambda15 = 0.18
-  lambda20 = 0.25
-  lambda21 = 2.2
-  lambda22 = 6.6
-  lambda23 = 2.2
-  lambda24 = 2.2
-  lambda25 = 0.1
-  lambda30 = -0.04341
-  lambda31 = 2.2
-  lambda32 = 2.2
-  lambda33 = 6.6
-  lambda34 = 2.2
-  lambda35 = 0.1
-  lambda40 = 0.67132
-  lambda41 = 2.2
-  lambda42 = 2.2
-  lambda43 = 2.2
-  lambda44 = 6.6
-  lambda45 = 0.1
-  lambdab = 0.0153
-  lambdac = 0.05
-  xim1 = 0.0008
-  xim2 = 0.0007
-  ro = 0.05
-  sigman = 0.1666
-  sigmat = 0.2
-  psid = 0.15255
-  psiu = 0.92
-  omega0 = -0.20594
-  omega1 = 1
-  omega2 = 2
-  omega3 = 0.45621
+    alpha1 = 0.75
+    alpha2 = 0.064
+    beta = 0.5
+    betab = 0.4
+    gamma = 0.15
+    gamma0 = 0.00122
+    gammar = 0.1
+    gammau = 0.05
+    delta = 0.10667
+    deltarep = 0.1
+    eps = 0.5
+    eps2 = 0.8
+    epsb = 0.25
+    epsrb = 0.9
+    eta0 = 0.07416
+    etan = 0.6
+    etar = 0.4
+    theta = 0.22844
+    # λ10 = -0.17071
+    # λ11 = 0
+    # λ12 = 0
+    # λ13 = 0
+    # λ14 = 0
+    # λ15 = 0.18
+    λ20 = 0.25
+    λ21 = 2.2
+    λ22 = 6.6
+    λ23 = 2.2
+    λ24 = 2.2
+    λ25 = 0.1
+    λ30 = -0.04341
+    λ31 = 2.2
+    λ32 = 2.2
+    λ33 = 6.6
+    λ34 = 2.2
+    λ35 = 0.1
+    λ40 = 0.67132
+    λ41 = 2.2
+    λ42 = 2.2
+    λ43 = 2.2
+    λ44 = 6.6
+    λ45 = 0.1
+    λb = 0.0153
+    λc = 0.05
+    xim1 = 0.0008
+    xim2 = 0.0007
+    ro = 0.05
+    σn = 0.1666
+    σt = 0.2
+    psid = 0.15255
+    psiu = 0.92
+    omega0 = -0.20594
+    omega1 = 1
+    omega2 = 2
+    omega3 = 0.45621
 end
 
 initial = @equations begin
-    sigmase = 0.16667
+    σse = 0.16667
     eta = 0.04918
     phi = 0.26417
     phit = 0.26417
@@ -248,7 +239,6 @@ initial = @equations begin
     Rln = 0.07
     RA = 0
     top = 0.12
-
 
     ADDl = 0.04592
     BLR = 0.1091
@@ -315,8 +305,6 @@ initial = @equations begin
     z1b = 0
     z2a = 0
     z2b = 0
-
-    ##
 
     #Bbd = 4388930
     #Bbs = 4388930
