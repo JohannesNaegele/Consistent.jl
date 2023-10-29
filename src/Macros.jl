@@ -2,8 +2,8 @@ function build_f!(endos, exos, params, args)
     endos = endos.variables
     exos = exos.variables
     params = params.variables
-    function_body = deepcopy(args)
 
+    function_body = deepcopy(args)
     for i in eachindex(function_body)
         # check if we really have a proper equation
         if (function_body[i].head == :(=))
@@ -34,11 +34,11 @@ Macro to build a stock-flow consistent model.
 
 # Example:
 ```julia-repl
-julia> @model begin
-    @endogenous Y T YD C H_s H_h H
-    @exogenous G
-    @parameters θ α_1 α_2
-    @equations begin
+julia> model(
+    endos = @variables(Y, T, YD, C, H_s, H_h, H),
+    exos = @variables(G),
+    params = @variables(θ, α_1, α_2),
+    eqs = @equations begin
         Y = C + G
         T = θ * Y
         YD = Y - T
@@ -47,25 +47,43 @@ julia> @model begin
         H_h + H_h[-1] = YD - C
         H = H_s + H_s[-1] + H[-1]
     end
-end
+)
+Stock-flow consistent model
 Endogenous Variables: [:Y, :T, :YD, :C, :H_s, :H_h, :H]
 Exogenous Variables:  [:G]
 Parameters:           [:θ, :α_1, :α_2]
 Equations:            
-           (1)  Y = C + G
-           (2)  T = θ * Y
-           (3)  YD = Y - T
-           (4)  C = α_1 * YD + α_2 * H[-1]
-           (5)  H_s + H_s[-1] = G - T
-           (6)  H_h + H_h[-1] = YD - C
-           (7)  H = H_s + H_s[-1] + H[-1]
+                      (1)  Y = C + G
+                      (2)  T = θ * Y
+                      (3)  YD = Y - T
+                      (4)  C = α_1 * YD + α_2 * H[-1]
+                      (5)  H_s + H_s[-1] = G - T
+                      (6)  H_h + H_h[-1] = YD - C
+                      (7)  H = H_s + H_s[-1] + H[-1]
 ```
 """
-function model(; endos=nothing, exos=Variables(), params::OrderedDict, eqs, verbose=false)
-    parameters = Variables(params)
+function model(;
+    endos=nothing::Union{Variables, Nothing},
+    exos=Variables(),
+    params=Variables()::Union{Variables, OrderedDict},
+    eqs,
+    verbose=false
+)
+    if params isa OrderedDict # FIXME: use promotion
+        parameters = Variables(params)
+    else # FIXME
+        parameters = params
+    end
+
+    if isnothing(endos)
+        println(left_symbol.(eqs.exprs))
+        endos = Variables(left_symbol.(eqs.exprs))
+    end
+
     if verbose
         println(build_f!(endos, exos, parameters, eqs.exprs))
     end
+
     eval(build_f!(endos, exos, parameters, eqs.exprs))
     return Model(
         endos,
