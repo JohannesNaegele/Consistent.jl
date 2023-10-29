@@ -52,15 +52,28 @@ using Test
 
         # test unused variables
         let eqs = @equations begin
-            Y = C
+                Y = C
+            end
+            @test_throws ErrorException model(
+                endos = @variables(Y, C, G),
+                exos = @variables(),
+                params = @variables(),
+                eqs = eqs
+            )
         end
+
+        # test future indices
         @test_throws ErrorException model(
-            endos = @variables(Y, C, G),
-            exos = @variables(),
-            params = @variables(),
-            eqs = eqs
+            eqs = @equations begin
+                Y = Y[1]
+            end
         )
-    end
+        @test_throws ErrorException model(
+            exos = @variables(G),
+            eqs = @equations begin
+                Y = G[1]
+            end
+        )
     end
 
     @testset "Verbose" begin
