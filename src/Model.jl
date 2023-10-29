@@ -24,12 +24,13 @@ function Base.show(io::IO, m::Model)
     for i in eachindex(descriptors)
         descriptors[i] = descriptors[i] * ' '^(max_width - length(descriptors[i]))
     end
-    println("Stock-flow consistent model")
+    println(io, "Stock-flow consistent model")
     print(io, Crayon(foreground = :green), descriptors[1]); println(io, Crayon(reset=true), m.endogenous_variables)
     print(io, Crayon(foreground = :yellow), descriptors[2]); println(io, Crayon(reset=true), m.exogenous_variables)
     print(io, Crayon(foreground = :blue), descriptors[3]); println(io, Crayon(reset=true), m.parameters)
     print(io, Crayon(foreground = :red), descriptors[4]); print(io, Crayon(reset=true))
     for i in eachindex(m.equations)
-        print(io, "\n", ' '^max_width, "($i)  ", m.equations[i])
+        additional_space = div(length(m.equations), 10) - div(i, 10)
+        print(io, "\n", ' '^(max_width + max(additional_space, 0)), "($i)  ", m.equations[i])
     end
 end
