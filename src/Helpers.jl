@@ -64,13 +64,31 @@ function find_symbols(line::Expr)
     found::Set{Symbol} = Set([])
     args = line.args
     for i in eachindex(args)
-        if typeof(args[i]) == Symbol
+        if args[i] isa Symbol
             push!(found, args[i])
-        elseif typeof(args[i]) == Expr
+        elseif args[i] isa Expr
             union!(found, find_symbols(args[i]))
         end
     end
     return setdiff(found, math_operators)
+end
+
+"""
+Get the symbol farthest to the left in an Expr.
+"""
+function left_symbol(line::Expr) # TODO: why do we not need to check heads?
+    args = line.args
+    for i in eachindex(args)
+        if args[i] isa Symbol && !(args[i] in math_operators)
+            return args[i]
+        elseif args[i] isa Expr
+            found = left_symbol(args[i])
+            if found isa Symbol
+                return found
+            end
+        end
+    end
+    return nothing
 end
 
 """
