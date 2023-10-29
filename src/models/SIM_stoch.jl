@@ -1,8 +1,8 @@
-SIMStoch() = @model begin
-    @endogenous G Y T YD C_e C H_s H_h H
-    @exogenous G_0 u_G u_T u_C
-    @parameters θ α_1 α_2 α_3
-    @equations begin
+SIMStoch() = model(
+    endos = @variables(G, Y, T, YD, C_e, C, H_s, H_h, H),
+    exos = @variables(G_0, u_G, u_T, u_C),
+    params = @variables(θ, α_1, α_2, α_3),
+    eqs = @equations begin
         G = G_0 + u_G
         Y = C + G
         T = θ * Y + u_T
@@ -13,7 +13,7 @@ SIMStoch() = @model begin
         H_h + H_h[-1] = YD - C
         H = H_s + H_s[-1] + H[-1]
     end
-end
+)
 
 params = Dict(
     :θ => 0.2, 

@@ -1,7 +1,7 @@
 """
 Find all symbols in an array of expressions.
 """
-function vars(lines::Vector)
+function vars(lines::Vector) # FIXME: consider that some symbols are external functions
     found::Set{Symbol} = Set([])
     for i in eachindex(lines)
         union!(found, find_symbols(lines[i]))

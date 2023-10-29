@@ -1,36 +1,9 @@
-"""
-Macro to specify the endogenous variables.
+function build_f!(endos, exos, params, args)
+    endos = endos.variables
+    exos = exos.variables
+    params = params.variables
 
-# Example:
-    @endogenous Y C
-"""
-macro endogenous(input...) # TODO: handle coma-seperated input; assert len endos = nr of equations
-    Consistent.sfc_model.endogenous_variables = remove_expr([input...])
-end
-
-"""
-Macro to specify the exogenous variables. Exogenous variables can change over time and are assumed to be readily available from data source.
-
-# Example:
-    @exogenous G X
-"""
-macro exogenous(input...)
-    Consistent.sfc_model.exogenous_variables = remove_expr([input...])
-end
-
-"""
-Macro to specify the parameters. Parameters typically can not change over time and can be calibrated to fit given data.
-
-# Example:
-    @parameters α θ
-"""
-macro parameters(input...)
-    Consistent.sfc_model.parameters = remove_expr([input...])
-end
-
-function build_f!(args)
     function_body = deepcopy(args)
-
     for i in eachindex(function_body)
         # check if we really have a proper equation
         if (function_body[i].head == :(=))
@@ -43,9 +16,6 @@ function build_f!(args)
 
     # construct arrays for different types of variables
     found = vars(function_body) # all found variables
-    endos = Consistent.sfc_model.endogenous_variables # endogenous variables
-    exos = Consistent.sfc_model.exogenous_variables # exogenous variables
-    params = Consistent.sfc_model.parameters # parameters
     variables = union(Set(endos), Set(exos), Set(params)) # all variables
 
     # check for unused variables from specification
@@ -56,22 +26,7 @@ function build_f!(args)
     end
 
     # construct function for residuals of model variables
-    return MacroTools.striplines(:(Consistent.sfc_model.f! = $(construct_residuals(name, function_body, args))))
-end
-
-"""
-Macro to specify the model equations. Use `begin ... end`.
-
-# Example:
-    @equations begin
-        Y = G + C
-    end
-"""
-macro equations(input...) # FIXME: refactor
-    ex = remove_blocks(MacroTools.striplines(input...))
-    @assert (ex.head == :block) "Block input expected" # we need block input (begin ... end)
-    Consistent.sfc_model.equations = deepcopy(ex.args)
-    return build_f!(ex.args)
+    return MacroTools.striplines(:(Consistent.f! = $(construct_residuals(name, function_body, args))))
 end
 
 """
@@ -79,11 +34,11 @@ Macro to build a stock-flow consistent model.
 
 # Example:
 ```julia-repl
-julia> @model begin
-    @endogenous Y T YD C H_s H_h H
-    @exogenous G
-    @parameters θ α_1 α_2
-    @equations begin
+julia> model(
+    endos = @variables(Y, T, YD, C, H_s, H_h, H),
+    exos = @variables(G),
+    params = @variables(θ, α_1, α_2),
+    eqs = @equations begin
         Y = C + G
         T = θ * Y
         YD = Y - T
@@ -92,22 +47,48 @@ julia> @model begin
         H_h + H_h[-1] = YD - C
         H = H_s + H_s[-1] + H[-1]
     end
-end
+)
+Stock-flow consistent model
 Endogenous Variables: [:Y, :T, :YD, :C, :H_s, :H_h, :H]
 Exogenous Variables:  [:G]
 Parameters:           [:θ, :α_1, :α_2]
 Equations:            
-           (1)  Y = C + G
-           (2)  T = θ * Y
-           (3)  YD = Y - T
-           (4)  C = α_1 * YD + α_2 * H[-1]
-           (5)  H_s + H_s[-1] = G - T
-           (6)  H_h + H_h[-1] = YD - C
-           (7)  H = H_s + H_s[-1] + H[-1]
+                      (1)  Y = C + G
+                      (2)  T = θ * Y
+                      (3)  YD = Y - T
+                      (4)  C = α_1 * YD + α_2 * H[-1]
+                      (5)  H_s + H_s[-1] = G - T
+                      (6)  H_h + H_h[-1] = YD - C
+                      (7)  H = H_s + H_s[-1] + H[-1]
 ```
 """
-macro model(input...) # FIXME: missing specification (e.g. endo YD) not always working
-    global Consistent.sfc_model = Model()
-    eval(input...)
-    return deepcopy(Consistent.sfc_model)
+function model(;
+    endos=nothing::Union{Variables, Nothing},
+    exos=Variables(),
+    params=Variables()::Union{Variables, OrderedDict},
+    eqs,
+    verbose=false
+)
+    if params isa OrderedDict # FIXME: use promotion
+        parameters = Variables(params)
+    else # FIXME
+        parameters = params
+    end
+
+    if isnothing(endos)
+        endos = Variables(left_symbol.(eqs.exprs))
+    end
+
+    if verbose
+        println(build_f!(endos, exos, parameters, eqs.exprs))
+    end
+
+    eval(build_f!(endos, exos, parameters, eqs.exprs))
+    return Model(
+        endos,
+        exos,
+        parameters,
+        eqs,
+        deepcopy(Consistent.f!)
+    )
 end
