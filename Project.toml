@@ -5,14 +5,17 @@ version = "1.0.0-DEV"
 
 [deps]
 Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
+OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+Pipe = "b98c9c47-44ae-5843-9183-064241ee97a0"
 
 [compat]
-MacroTools = "0.5"
 Crayons = "4"
+MacroTools = "0.5"
 julia = "1"
 
 [extras]
