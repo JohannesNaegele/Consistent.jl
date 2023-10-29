@@ -27,17 +27,29 @@ using Test
             )
         end
         
-        # test unused variables
+        # test missing variables
         let eqs = @equations begin
-                Y = C + G
+                Y = C
             end
-            @test_throws ErrorException model(
+            @test_warn "Symbols [:C] are not in variables or parameters" model(
                 endos = @variables(Y),
                 exos = @variables(),
                 params = @variables(),
                 eqs = eqs
             )
         end
+
+        # test unused variables
+        let eqs = @equations begin
+            Y = C
+        end
+        @test_throws ErrorException model(
+            endos = @variables(Y, C, G),
+            exos = @variables(),
+            params = @variables(),
+            eqs = eqs
+        )
+    end
     end
 
     @testset "Default models" begin
