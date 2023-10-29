@@ -13,6 +13,31 @@ using Test
             :(z = endos[2] * (lags[2, end - 0] + 0.5 * endos[1]) * params[1] + exos[1, end - -1]),
             :(y = lags[1, end - -1] * exos[1, end - 0] * b)
         ]
+
+        # test non-equation
+        let eqs = @equations begin
+                Y = C + G
+                a + b
+            end
+            @test_throws ErrorException model(
+                endos = @variables(Y),
+                exos = @variables(),
+                params = @variables(),
+                eqs = eqs
+            )
+        end
+        
+        # test unused variables
+        let eqs = @equations begin
+                Y = C + G
+            end
+            @test_throws ErrorException model(
+                endos = @variables(Y),
+                exos = @variables(),
+                params = @variables(),
+                eqs = eqs
+            )
+        end
     end
 
     @testset "Default models" begin
