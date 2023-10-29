@@ -52,6 +52,20 @@ using Test
     end
     end
 
+    @testset "Verbose" begin
+        let eqs = @equations begin
+                Y = C + G
+            end
+            model(
+                endos = @variables(Y),
+                exos = @variables(C, G),
+                params = @variables(),
+                eqs = eqs,
+                verbose = true
+            )
+        end
+    end
+
     @testset "Default models" begin
         sim = Consistent.SIM()
         @test sim[:model].exogenous_variables.variables == [:G]
