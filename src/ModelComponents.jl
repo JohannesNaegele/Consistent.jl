@@ -13,7 +13,7 @@ Variables() = Variables(Symbol[])
 MacroTools.@forward Variables.variables Base.getindex, Base.setindex!, Base.size
 
 macro variables(input...)
-    if (input[1] isa Expr) && (input[1].head == :block)
+    if (length(input) > 0) && (input[1] isa Expr) && (input[1].head == :block)
         @assert (length(input) == 1) "Can't handle several blocks"
         args = input[1].args
         vars = filter(e -> isa(e, Symbol), args)
@@ -50,7 +50,7 @@ end
 struct Equations <: AbstractVector{Expr}
     exprs::Vector{Expr}
 end
-
+# FIXME: print as strings
 MacroTools.@forward Equations.exprs Base.getindex, Base.setindex!, Base.size
 
 """
