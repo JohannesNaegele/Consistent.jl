@@ -17,10 +17,11 @@ using Test
 
     @testset "Default models" begin
         sim = Consistent.SIM()
-        @test sim.exogenous_variables.variables == [:G]
-        # @test LP()
-        # @test PC()
-        # @test DIS()
-        # @test BMW()
+        @test sim[:model].exogenous_variables.variables == [:G]
+        Consistent.SIMStoch()
+        Consistent.LP()
+        Consistent.PC()
+        Consistent.DIS()
+        # Consistent.BMW()
     end
 end
