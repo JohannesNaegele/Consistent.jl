@@ -28,13 +28,13 @@ firms2 = @equations begin
     ωₜ = exp(ω₀ + ω₁ * log(PR) + ω₂ * log(ER + z3 * (1 - ER) - z4 * BANDₜ + z5 * BANDᵦ)) # 11.18: Real wage aspirations
     ER = N[-1] / Nfe[-1] # 11.19: Employment rate
     # 11.20: Switch variables
-    z3 = ((1 + BANDᵦ) < ER <= (1 + BANDₜ)) ? 1: 0 # Band activation
-    z4 = ER > (1 + BANDₜ) ? 1: 0 # Upper band overshoot
-    z5 = ER < (1 - BANDᵦ) ? 1: 0 # Lower band undershoot
+    z3 = ((1 + BANDᵦ) < ER <= (1 + BANDₜ)) ? 1 : 0 # Band activation
+    z4 = ER > (1 + BANDₜ) ? 1 : 0 # Upper band overshoot
+    z5 = ER < (1 - BANDᵦ) ? 1 : 0 # Lower band undershoot
     W = W[-1] + ω₃ * (ωₜ * P[-1] - W[-1]) # 11.21: Nominal wage
     PR = PR[-1] * (1 + GRpr) # 11.22: Labor productivity
     Nt = Yk / PR # 11.23: Desired employment
-    N = N[-1] + ηₙ * (Nt - N[-1]) # 11.24: Actual employment --> etan not in the book
+    N = N[-1] + ηₙ * (Nt - N[-1]) # 11.24: Actual employment --> ηn not in the book
     WB = N * W # 11.25: Nominal wage bill
     UC = WB / Yk # 11.26: Actual unit cost
     NUC = W / PR # 11.27: Normal unit cost
@@ -49,20 +49,56 @@ firms3 = @equations begin
     HCe = (1 - σₛₑ) * Ske * UC + (1 + Rl[-1]) * σₛₑ * Ske * UC[-1] # 11.33: Opening inventories to expected sales ratio
     σₛₑ = INk[-1] / Ske # 11.34: Planned entrepeneurial profits of firms
     Fft = FUft + FDf + Rl[-1] * (Lfd[-1] - IN[-1]) # 11.34: Planned entrepeneurial profits of firms
-    FUft = ψᵤ * INV[-1] # 11.35: Planned retained earnings of firms
+    FUft = ψᵤ * INV[-1] # 11.35: Planned rηined earnings of firms
     FDf = ψd * Ff[-1] # 11.36: Dividends of firms
 end
 
 # Box 11.5: Firms equations
 firms4 = @equations begin
-    Ff = S - WB + (IN - IN[-1]) - Rl[-1]*IN[-1] # 11.37: Realized entrepeneurial profits
-    FUf = Ff - FDf - Rl[-1]*(Lfd[-1] - IN[-1]) + Rl[-1]*NPL # 11.38: Retained earnings of firms
-    Lfd = Lfd[-1] + INV + (IN - IN[-1]) - FUf - (Eks - Eks[-1])*Pe - NPL # 11.39: Demand for loans by firms
+    Ff = S - WB + (IN - IN[-1]) - Rl[-1] * IN[-1] # 11.37: Realized entrepeneurial profits
+    FUf = Ff - FDf - Rl[-1] * (Lfd[-1] - IN[-1]) + Rl[-1] * NPL # 11.38: Rηined earnings of firms
+    Lfd = Lfd[-1] + INV + (IN - IN[-1]) - FUf - (Eks - Eks[-1]) * Pe - NPL # 11.39: Demand for loans by firms
     NPL = NPLk * Lfs[-1] # 11.40: Defaulted loans
-
+    Eks = Eks[-1] + ((1 - ψᵤ) * INV[-1]) / Pe  # 11.41: Supply of equities issued by firms
+    # Rk = FDf/(Pe[-1]*Ekd[-1])          # 11.42: Dividend yield of firms
+    Rk = FDf / (Pe[-1] * Ekd[-1])
+    PE = Pe / (Ff / Eks[-1])               # 11.43: Price earnings ratio
+    Q = (Eks * Pe + Lfd) / (K + IN)        # 11.44: Tobins Q ratio
 end
 
-@equations begin
+# Box 11.6: Households equations
+hh1 = @equations begin
+    # YP = WB + FDf + FDb + Rm[-1]*Md[-1] + Rb[-1]*Bhd[-1] + BLs[-1]  # 11.45: Personal income
+    YP = WB + FDf + FDb + Rm[-1] * Mh[-1] + Rb[-1] * Bhd[-1] + BLs[-1]
+    #YP = WB + FDf + FDb + Rm[-1]*Mh[-1] + Rb[-1]*Bhd[-1] + BLs[-1] + NL
+    TX = theta * YP                       # 11.46: Income taxes
+    YDr = YP - TX - Rl[-1] * Lhd[-1]      # 11.47: Regular disposable income
+    YDhs = YDr + CG                    # 11.48: Haig-Simons disposable income
+    # 11.49: Capital gains
+    CG = (Pbl - Pbl[-1]) * BLd[-1] + (Pe - Pe[-1]) * Ekd[-1] + (OFb - OFb[-1])
+    # 11.50: Wealth
+    V = V[-1] + YDr - CONS + (Pbl - Pbl[-1]) * BLd[-1] + (Pe - Pe[-1]) * Ekd[-1] + (OFb - OFb[-1])
+    Vk = V / P                           # 11.51: Real staock of wealth
+    CONS = Ck * P                        # 11.52: Consumption
+    Ck = alpha1 * (YDkre + NLk) + alpha2 * Vk[-1]  # 11.53: Real consumption
+    YDkre = eps * YDkr + (1 - eps) * (YDkr[-1] * (1 + GRpr))  # 11.54: Expected real regular disposable income
+    # YDkr = YDr/P - (P - P[-1])*Vk[-1]/P  # 11.55: Real regular disposable income
+    YDkr = YDr / P - ((P - P[-1]) * Vk[-1]) / P
+end
+
+# Box 11.7: Households equations
+hh2 = @equations begin
+    GL = η * YDr                       # 11.56: Gross amount of new personal loans ---> new η here
+    η = η₀ - ηr * RRl              # 11.57: New loans to personal income ratio
+    NL = GL - REP                      # 11.58: Net amount of new personal loans
+    REP = deltarep * Lhd[-1]             # 11.59: Personal loans repayments
+    Lhd = Lhd[-1] + GL - REP           # 11.60: Demand for personal loans
+    NLk = NL / P                         # 11.61: Real amount of new personal loans
+    BUR = (REP + Rl[-1] * Lhd[-1]) / YDr[-1] # 11.62: Burden of personal debt
+end
+
+# Box 11.8: Households equations - portfolio decisions
+hh2 = @equations begin
     # 11.64: Demand for bills
     Bhd = Vfma[-1] * (λ20 + λ22 * Rb[-1] - λ21 * Rm[-1] - λ24 * Rk[-1] - λ23 * Rbl[-1] - λ25 * (YDr / V))
     # 11.65: Demand for bonds
@@ -71,7 +107,7 @@ end
     Pe = Vfma[-1] * (λ40 - λ42 * Rb[-1] - λ41 * Rm[-1] + λ44 * Rk[-1] - λ43 * Rbl[-1] - λ45 * (YDr / V)) / Ekd
     Mh = Vfma - Bhd - Pe * Ekd - Pbl * BLd + Lhd # 11.67: Money deposits - as a residual
     Vfma = V - Hhd - OFb # 11.68: Investible wealth
-    VfmaA = Mh + Bhd + Pbl * BLd + Pe * Ekd 
+    VfmaA = Mh + Bhd + Pbl * BLd + Pe * Ekd
     Hhd = λc * CONS # 11.69: Households demand for cash
     Ekd = Eks # 11.70: Stock market equilibrium
 end
@@ -145,7 +181,7 @@ banks2 = @equations begin
     Rl = Rm + ADDl                            # 11.98: Loan interest rate
     OFbt = NCAR * (Lfs[-1] + Lhs[-1])         # 11.99: Long-run own funds target
     OFbe = OFb[-1] + β * (OFbt - OFb[-1])     # 11.100: Short-run own funds target
-    FUbt = OFbe - OFb[-1] + NPLke * Lfs[-1]   # 11.101: Target retained earnings of banks
+    FUbt = OFbe - OFb[-1] + NPLke * Lfs[-1]   # 11.101: Target rηined earnings of banks
     NPLke = εb * NPLke[-1] + (1 - εb) * NPLk[-1]  # 11.102: Expected proportion of non-performing loans
     FDb = Fb - FUb                            # 11.103: Dividends of banks
     Fbt = λb * Y[-1] + (OFbe - OFb[-1] + NPLke * Lfs[-1])  # 11.104: Target profits of banks
@@ -153,7 +189,7 @@ banks2 = @equations begin
     Fb = Rl[-1] * (Lfs[-1] + Lhs[-1] - NPL) + Rb[-1] * Bbd[-1] - Rm[-1] * Ms[-1]
     # 11.106: Lending mark-up over deposit rate
     ADDl = (Fbt - Rb[-1] * Bbd[-1] + Rm[-1] * (Ms[-1] - (1 - NPLke) * Lfs[-1] - Lhs[-1])) / ((1 - NPLke) * Lfs[-1] + Lhs[-1])
-    FUb = Fb - λb * Y[-1]                      # 11.107: Actual retained earnings
+    FUb = Fb - λb * Y[-1]                      # 11.107: Actual rηined earnings
     OFb = OFb[-1] + FUb - NPL                  # 11.108: Own funds of banks
     CAR = OFb / (Lfs + Lhs)
 
@@ -165,8 +201,8 @@ end
 param_dict = @parameters begin
     alpha1 = 0.75
     alpha2 = 0.064
-    beta = 0.5
-    betab = 0.4
+    bη = 0.5
+    bηb = 0.4
     gamma = 0.15
     gamma0 = 0.00122
     gammar = 0.1
@@ -177,10 +213,10 @@ param_dict = @parameters begin
     eps2 = 0.8
     epsb = 0.25
     epsrb = 0.9
-    eta0 = 0.07416
-    etan = 0.6
-    etar = 0.4
-    theta = 0.22844
+    η0 = 0.07416
+    ηn = 0.6
+    ηr = 0.4
+    thη = 0.22844
     # λ10 = -0.17071
     # λ11 = 0
     # λ12 = 0
@@ -212,8 +248,8 @@ param_dict = @parameters begin
     ro = 0.05
     σn = 0.1666
     σt = 0.2
-    psid = 0.15255
-    psiu = 0.92
+    ψd = 0.15255
+    ψᵤ = 0.92
     omega0 = -0.20594
     omega1 = 1
     omega2 = 2
@@ -222,7 +258,7 @@ end
 
 initial = @equations begin
     σse = 0.16667
-    eta = 0.04918
+    η = 0.04918
     phi = 0.26417
     phit = 0.26417
 
