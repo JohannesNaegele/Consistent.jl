@@ -22,6 +22,6 @@ using Test
         Consistent.LP()
         Consistent.PC()
         Consistent.DIS()
-        # Consistent.BMW()
+        Consistent.BMW()
     end
 end

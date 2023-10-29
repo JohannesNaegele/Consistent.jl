@@ -76,7 +76,6 @@ function model(;
     end
 
     if isnothing(endos)
-        println(left_symbol.(eqs.exprs))
         endos = Variables(left_symbol.(eqs.exprs))
     end
 
