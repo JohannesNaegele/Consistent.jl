@@ -33,8 +33,6 @@ function remove_expr(x::Array)
     return untangled
 end
 
-remove_blocks(e::Any) = e
-
 """
 Sometimes our equation input might have lines which are themselves blocks (with only a single line).
 This happens e.g. if we have two variables on the left hand side.
@@ -88,6 +86,7 @@ function left_symbol(line::Expr) # TODO: why do we not need to check heads?
             end
         end
     end
+    # fallback
     return nothing
 end
 

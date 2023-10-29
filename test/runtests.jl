@@ -3,7 +3,18 @@ using Test
 
 @testset "Consistent.jl" begin
 
+    @testset "Types" begin
+        let vars = @variables Y, C, G
+            @test Consistent.Variables(vars) == vars
+        end
+
+        @test Consistent.Variables([:a, :b]) == @variables [a, b]
+    end
+
     @testset "Internals" begin
+        @test Consistent.left_symbol(:(Y - C = G)) == :Y
+        @test isnothing(Consistent.left_symbol(:(1 = 1)))
+
         @test Consistent.remove_expr([:x :(a in b) :y]) == [:x, :a, :in, :b, :y]
         test_eqs = quote
             z = y * (y[-1] + 0.5 * z) * θ + x[-1]
@@ -106,5 +117,17 @@ using Test
         )
 
         PC_complete = PC_gdp + PC_hh
+    end
+
+    @testset "Solve" begin
+        sim = Consistent.SIM()
+        let sol = solve(
+                sim[:model],
+                sim[:lags],
+                sim[:exos],
+                map(x -> sim[:params][x], sim[:model].parameters)
+            )
+            @test round(sol[1]) == 38.0
+        end
     end
 end
