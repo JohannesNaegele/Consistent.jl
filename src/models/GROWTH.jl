@@ -59,7 +59,8 @@ firms₃ = model(
     eqs=@equations begin
         p = (1 + ϕ) * NHUC # 11.29: Normal-cost pricing
         ϕ = ϕ[-1] + ε₂ * (ϕₜ[-1] - ϕ[-1]) # 11.30: Actual mark-up --> ε₂ not in the book
-        ϕₜ = (FUft + FDf + rₗ[-1] * (Lfd[-1] - IN[-1])) / ((1 - σₛₑ) * S) # 11.32: Expected historical costs ???
+        # 11.32: Expected historical costs ???
+        ϕₜ = (FUft + FDf + rₗ[-1] * (Lfd[-1] - IN[-1])) / ((1 - σₛₑ) * Skₑ * UC + (1 + rₗ[-1]) * σₛₑ * Skₑ * UC[-1])
         HCe = (1 - σₛₑ) * Skₑ * UC + (1 + rₗ[-1]) * σₛₑ * Skₑ * UC[-1] # 11.33: Opening inventories to expected sales ratio
         σₛₑ = INk[-1] / Skₑ # 11.34: Planned entrepeneurial profits of firms
         Fft = FUft + FDf + rₗ[-1] * (Lfd[-1] - IN[-1]) # 11.34: Planned entrepeneurial profits of firms
@@ -94,7 +95,7 @@ hh₁ = model(
         YDhs = YDᵣ + CG                    # 11.48: Haig-Simons disposable income
         CG = (Pbl - Pbl[-1]) * BLd[-1] + (Pₑ - Pₑ[-1]) * ed[-1] + (OFb - OFb[-1]) # 11.49: Capital gains
         # 11.50: Wealth
-        V = V[-1] + YDᵣ - CONS # ??? fixed
+        V = V[-1] + YDᵣ - CONS + (Pbl - Pbl[-1]) * BLd[-1] + (Pₑ - Pₑ[-1]) * ed[-1] + (OFb - OFb[-1]) # ???
         Vk = V / p                           # 11.51: Real stock of wealth
         CONS = Ck * p                        # 11.52: Consumption
         Ck = α₁ * (YDkre + NLk) + α₂ * Vk[-1]  # 11.53: Real consumption
@@ -410,27 +411,19 @@ growth = aggr + firms₁ + firms₂ + firms₃ + firms₄ + hh₁ + hh₂ + hh�
 growth = add_params(growth, Consistent.Variables(params_dict))
 growth = add_exos(growth, @variables(RA, GRpr, GRg, BANDb, BANDₜ, ER, NCAR, Rbbar, ADDbl, bot, top), true)
 
-lags = map(x -> initial_dict[x] isa Number ? initial_dict[x] : 0.0, growth.endogenous_variables)[:,:]
-exos_const = map(x -> initial_dict[x], growth.exogenous_variables)
+lags = map(x -> initial_dict[x] isa Number ? Float64(initial_dict[x]) : 0.0, growth.endogenous_variables)[:,:]
+exos_const = map(x -> Float64(initial_dict[x]), growth.exogenous_variables)
 exos = hcat(exos_const, exos_const)
-param_values = map(x -> params_dict[x], growth.parameters)
+param_values = map(x -> Float64(params_dict[x]), growth.parameters)
 
-a = fill(1.0, length(growth.endogenous_variables))
-growth.f!(a, lags[:, 1], lags, exos, param_values)
+# a = fill(1.0, length(growth.endogenous_variables))
+# growth.f!(a, lags[:, 1], lags, exos, param_values)
+# b = similar(lags)
+# fill!(b, 0.0)
+solve(growth, lags, exos, param_values, initial=lags[:, 1], method=:broyden)
 # growth.equations[findfirst(==(:G), growth.endogenous_variables)]
-solve(growth, lags, exos, param_values, initial=lags[:, 1], solver=:newton)
 
-# a = :(((1 + BANDb) < ER <= (1 + BANDₜ)) ? 1 : 0)
-# Consistent.replace_vars(
-#     [a],
-#     Symbol[],
-#     Symbol[:BANDb, :ER],
-#     Symbol[],
-# )
-# b = Consistent.create_vars(
-#     b,
-#     Set(Symbol[:BANDb]),
-#     Symbol[],
-#     Symbol[:BANDb],
-#     [:endos, :lags, :exos]
+# NLsolve.nlsolve(
+#     (x, y) -> growth.f!(x, y, lags, exos, param_values),
+#     lags[:, 1]
 # )
