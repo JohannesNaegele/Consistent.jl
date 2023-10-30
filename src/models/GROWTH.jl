@@ -1,4 +1,4 @@
-operators!([:<, :>, :≤, :<=, :≥, :>=])
+operators!([:<, :>, :≤, :<=, :≥, :>=, :exp, :log])
 
 # Box 11.1: Aggregation equations
 aggr = model(
@@ -7,7 +7,7 @@ aggr = model(
         Yk = Skₑ + INkₑ - INk[-1] # 11.1: Real output
         Skₑ = β * Sk + (1 - β) * Sk[-1] * (1 + GRpr + RA) # 11.2: Expected real sales ??? RA
         INkₜ = σₜ * Skₑ # 11.3: Long-run inventory target
-        INkₑ = INk[-1] + γ * (INKₜ - INk[-1]) # 11.4: Short-run inventory target
+        INkₑ = INk[-1] + γ * (INkₜ - INk[-1]) # 11.4: Short-run inventory target
         INk = INk[-1] + Yk - Sk - NPL / UC # 11.5: Actual real inventories ??? - NPL / UC
         Kk = Kk[-1] * (1 + GRk) # 11.6: Real capital stock
         GRk = γ₀ + γᵤ * U[-1] - γᵣ * RRₗ # 11.7: Growth of real capital stock ??? [-1]
@@ -33,14 +33,15 @@ firms₁ = model(
 
 # Box 11.3: Firms equations
 firms₂ = model(
-    exos=@variables(Nfe, p, Rln),
+    exos=@variables(Nfe, p, Rln, ER, BANDb),
+    verbose=true,
     eqs=@equations begin
-        ωT = exp(ω₀ + ω₁ * log(PR) + ω₂ * log(ER + z₃ * (1 - ER) - z₄ * BANDₜ + z₅ * BANDᵦ)) # 11.18: Real wage aspirations ???
+        ωT = exp(ω₀ + ω₁ * log(PR) + ω₂ * log(ER + z₃ * (1 - ER) - z₄ * BANDₜ + z₅ * BANDb)) # 11.18: Real wage aspirations ???
         ER = N[-1] / Nfe[-1] # 11.19: Employment rate
         # 11.20: Switch variables
-        z₃ = ((1 + BANDᵦ) < ER <= (1 + BANDₜ)) ? 1 : 0 # Band activation
+        z₃ = ((1 + BANDb) < ER <= (1 + BANDₜ)) ? 1 : 0 # Band activation
         z₄ = ER > (1 + BANDₜ) ? 1 : 0 # Upper band overshoot
-        z₅ = ER < (1 - BANDᵦ) ? 1 : 0 # Lower band undershoot
+        z₅ = ER < (1 - BANDb) ? 1 : 0 # Lower band undershoot
         W = W[-1] + Ω₃ * (ωT * p[-1] - W[-1]) # 11.21: Nominal wage
         PR = PR[-1] * (1 + GRpr) # 11.22: Labor productivity
         NT = Yk / PR # 11.23: Desired employment
@@ -159,7 +160,7 @@ cb = model(
         Hs = Hbs + Hhs                            # 11.81: Total supply of cash
         Bcbd = Hs                                 # 11.82: Central bank
         Bcbs = Bcbd                               # 11.83: Supply of bills to Central bank
-        rb = Rb̄                                  # 11.84: Interest rate on bills set exogenously
+        rb = Rbbar                                  # 11.84: Interest rate on bills set exogenously
         Rbl = rb + ADDbl                          # 11.85: Long term interest rate
         Pbl = 1 / Rbl                             # 11.86: Price of long-term bonds
     end
@@ -212,11 +213,7 @@ banks₂ = model(
     end
 )
 
-growth = aggr + firms₁ + firms₂ + firms₃ + firms₄ + hh₁ + hh₂ + hh₃ + gov + cb + banks₁ + banks₂
-growth.endogenous_variables
-growth + Consistent.Variables(param_dict)
-
-param_dict = @parameters begin
+params_dict = @parameters begin
     α₁ = 0.75
     α₂ = 0.064
     β = 0.5
@@ -261,10 +258,9 @@ param_dict = @parameters begin
     λ₄₅ = 0.1
     λb = 0.0153
     λc = 0.05
-    ξ
     ξ₁ = 0.0008
     ξ₂ = 0.0007
-    # ro = 0.05
+    ρ = 0.05
     σₙ = 0.1666
     σₜ = 0.2
     ψd = 0.15255
@@ -275,14 +271,15 @@ param_dict = @parameters begin
     Ω₃ = 0.45621
 end
 
-initial = @parameters begin
-    σse = 0.16667
+initial_dict = @parameters begin
+    Rbbar = 0.035
+
+    σₛₑ = 0.16667
     η = 0.04918
     ϕ = 0.26417
     ϕₜ = 0.26417
-
     ADDbl = 0.02
-    BANDt = 0.01
+    BANDₜ = 0.01
     BANDb = 0.01
     bot = 0.05
     GRg = 0.03
@@ -294,7 +291,6 @@ initial = @parameters begin
     Rln = 0.07
     RA = 0
     top = 0.12
-
     ADDl = 0.04592
     BLR = 0.1091
     BUR = 0.06324
@@ -325,7 +321,7 @@ initial = @parameters begin
     NPL = 309158
     NPLke = 0.02
     NUC = 5.6106
-    ωt = 112852
+    ωT = 112852
     p = 7.1723
     Pbl = 18.182
     Pₑ = 17937
@@ -340,7 +336,6 @@ initial = @parameters begin
     rₗ = 0.06522
     rₘ = 0.0193
     REP = 2092310
-    #RRb = 0.03232
     RRₗ = 0.06246
     S = 86270300
     Sk = 12028300
@@ -360,19 +355,13 @@ initial = @parameters begin
     z1b = 0
     z2a = 0
     z2b = 0
-
-    #Bbd = 4388930
-    #Bbs = 4388930
     Bbd = 4389790
     Bbs = 4389790
     Bcbd = 4655690
     Bcbs = 4655690
     Bhd = 33439320
     Bhs = 33439320
-    #Bhd = 33396900
-    #Bhs = 33396900
     Bs = 42484800
-    #Bs = 42441520
     BLd = 840742
     BLs = 840742
     GD = 57728700
@@ -386,28 +375,60 @@ initial = @parameters begin
     IN = 11585400
     INk = 2064890
     INkₑ = 2405660
-    INKₜ = 2064890
-    #K = 127444000
+    INkₜ = 2064890
     K = 127486471
-    #Kk = 17768900
     Kk = 17774838
     Lfd = 15962900
     Lfs = 15962900
     Lhd = 21606600
     Lhs = 21606600
     Ls = 37569500
-    #Md = 40510800
     Mₕ = 40510800
     Ms = 40510800
     OFb = 3474030
     OFbe = 3474030
-    #OFb = 3473280
-    #OFbe = 3782430
     OFbt = 3638100
-    #V = 165395000
     V = 165438779
-    #Vfma = 159291000
     Vfma = 159334599
     Vk = 23066350
     Vf = 31361792
+
+    z₃ = missing
+    z₄ = missing
+    z₅ = missing
+    HCe = missing
+    YDhs = missing
+    CG = missing
+    VfmaA = missing
+    Fcb = missing
+    FUbt = missing
 end
+
+growth = aggr + firms₁ + firms₂ + firms₃ + firms₄ + hh₁ + hh₂ + hh₃ + gov + cb + banks₁ + banks₂
+growth = add_params(growth, Consistent.Variables(params_dict))
+growth = add_exos(growth, @variables(RA, GRpr, GRg, BANDb, BANDₜ, ER, NCAR, Rbbar, ADDbl, bot, top), true)
+
+lags = map(x -> initial_dict[x] isa Number ? initial_dict[x] : 0.0, growth.endogenous_variables)[:,:]
+exos_const = map(x -> initial_dict[x], growth.exogenous_variables)
+exos = hcat(exos_const, exos_const)
+param_values = map(x -> params_dict[x], growth.parameters)
+
+a = fill(1.0, length(growth.endogenous_variables))
+growth.f!(a, fill(1.0, length(growth.endogenous_variables)), lags, exos, param_values)
+
+solve(growth, lags, exos, param_values)
+
+# a = :(((1 + BANDb) < ER <= (1 + BANDₜ)) ? 1 : 0)
+# Consistent.replace_vars(
+#     [a],
+#     Symbol[],
+#     Symbol[:BANDb, :ER],
+#     Symbol[],
+# )
+# b = Consistent.create_vars(
+#     b,
+#     Set(Symbol[:BANDb]),
+#     Symbol[],
+#     Symbol[:BANDb],
+#     [:endos, :lags, :exos]
+# )
