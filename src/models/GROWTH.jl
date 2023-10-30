@@ -272,16 +272,12 @@ params_dict = @parameters begin
 end
 
 initial_dict = @parameters begin
-    Rbbar = 0.035
-
-    σₛₑ = 0.16667
-    η = 0.04918
-    ϕ = 0.26417
-    ϕₜ = 0.26417
     ADDbl = 0.02
     BANDₜ = 0.01
     BANDb = 0.01
+    Rbbar = 0.035
     bot = 0.05
+    top = 0.12
     GRg = 0.03
     GRpr = 0.03
     Nfe = 87.181
@@ -290,7 +286,12 @@ initial_dict = @parameters begin
     Rbbar = 0.035
     Rln = 0.07
     RA = 0
-    top = 0.12
+
+    ϕ = 0.26417
+    ϕₜ = 0.26417
+    σₛₑ = 0.16667
+    η = 0.04918
+
     ADDl = 0.04592
     BLR = 0.1091
     BUR = 0.06324
@@ -313,7 +314,7 @@ initial_dict = @parameters begin
     GRk = 0.03001
     INV = 16911600
     Ik = 2357910
-    N = 87.181
+    N = 87.181 # ???
     NT = 87.181
     NHUC = 5.6735
     NL = 683593
@@ -355,6 +356,7 @@ initial_dict = @parameters begin
     z1b = 0
     z2a = 0
     z2b = 0
+
     Bbd = 4389790
     Bbs = 4389790
     Bcbd = 4655690
@@ -382,7 +384,7 @@ initial_dict = @parameters begin
     Lfs = 15962900
     Lhd = 21606600
     Lhs = 21606600
-    Ls = 37569500
+    Ls = 37569500 # ???
     Mₕ = 40510800
     Ms = 40510800
     OFb = 3474030
@@ -391,7 +393,7 @@ initial_dict = @parameters begin
     V = 165438779
     Vfma = 159334599
     Vk = 23066350
-    Vf = 31361792
+    Vf = 31361792 # ???
 
     z₃ = missing
     z₄ = missing
@@ -414,9 +416,9 @@ exos = hcat(exos_const, exos_const)
 param_values = map(x -> params_dict[x], growth.parameters)
 
 a = fill(1.0, length(growth.endogenous_variables))
-growth.f!(a, fill(1.0, length(growth.endogenous_variables)), lags, exos, param_values)
-
-solve(growth, lags, exos, param_values)
+growth.f!(a, lags[:, 1], lags, exos, param_values)
+# growth.equations[findfirst(==(:G), growth.endogenous_variables)]
+solve(growth, lags, exos, param_values, initial=lags[:, 1], solver=:newton)
 
 # a = :(((1 + BANDb) < ER <= (1 + BANDₜ)) ? 1 : 0)
 # Consistent.replace_vars(
