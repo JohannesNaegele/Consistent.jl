@@ -22,7 +22,7 @@ function build_f!(endos, exos, params, args)
     if issubset(variables, found)
         function_body = replace_vars(function_body, endos, exos, params, name[2:5])
     else
-        error("$(setdiff(variables, found)) unused!")
+        error("$(setdiff(variables, found)) unused!\n\nUsed: $found")
     end
 
     # construct function for residuals of model variables
@@ -92,3 +92,5 @@ function model(;
         deepcopy(Consistent.f!)
     )
 end
+
+operators!(x) = union!(math_operators, x)
