@@ -1,4 +1,4 @@
-function construct_residuals(name, function_body, expr)
+function construct_residuals(name, function_body, args)
     f! = quote
         function f!($(name[1]), $(name[2]), $(name[3]), $(name[4]), $(name[5]))
             nothing
@@ -9,10 +9,8 @@ function construct_residuals(name, function_body, expr)
     for i in eachindex(function_body)
         function_body[i] = :($(name[1])[$i] = $(function_body[i]))
     end
-    body = deepcopy(expr)
-    body.args = function_body
 
     # add function body to function
-    f!.args[2].args[end] = body
+    f!.args[2].args[end] = Expr(:block, function_body...)
     return f!
 end

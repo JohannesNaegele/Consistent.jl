@@ -7,6 +7,9 @@ Thus, we decompose expressions like :(a in b) in individual Symbols.
 function remove_expr(x::Expr)
     if x.head == :call
         return [x.args[2], x.args[1], x.args[3]]
+    # TODO: test whether this might have unintentional side effects
+    elseif x.head == :block
+        return x.args
     else
         error("Can not handle $x")
     end
@@ -29,8 +32,6 @@ function remove_expr(x::Array)
     end
     return untangled
 end
-
-remove_blocks(e::Any) = e
 
 """
 Sometimes our equation input might have lines which are themselves blocks (with only a single line).
@@ -61,11 +62,44 @@ function find_symbols(line::Expr)
     found::Set{Symbol} = Set([])
     args = line.args
     for i in eachindex(args)
-        if typeof(args[i]) == Symbol
+        if args[i] isa Symbol
             push!(found, args[i])
-        elseif typeof(args[i]) == Expr
+        elseif args[i] isa Expr
             union!(found, find_symbols(args[i]))
         end
     end
     return setdiff(found, math_operators)
+end
+
+"""
+Get the symbol farthest to the left in an Expr.
+"""
+function left_symbol(line::Expr) # TODO: why do we not need to check heads?
+    args = line.args
+    for i in eachindex(args)
+        if args[i] isa Symbol && !(args[i] in math_operators)
+            return args[i]
+        elseif args[i] isa Expr
+            found = left_symbol(args[i])
+            if found isa Symbol
+                return found
+            end
+        end
+    end
+    # fallback
+    return nothing
+end
+
+"""
+Handle input variables in
+- array form
+- coma-seperated form
+- whitespace seperated form
+"""
+function handle_input(input)
+    if (length(input) == 1) && isa(input[1], Expr) && (input[1].head in (:vect, :tuple))
+        input[1].args
+    else
+        input
+    end
 end
