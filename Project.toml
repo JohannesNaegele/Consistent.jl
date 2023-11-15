@@ -18,6 +18,7 @@ Crayons = "4"
 DataFrames = "1"
 MacroTools = "0.5"
 NLsolve = "4"
+OrderedCollections = "1"
 julia = "1"
 
 [extras]
