@@ -5,23 +5,52 @@ using Optimization
 using OptimizationOptimJL
 using SciMLSensitivity
 
-function calibrate!(data, model, parameters=Dict(), initial_parameters=Dict())
+function calibrate(data, model, opt_vars, opt_params, init_params)
+    # Set up variables
     exos = permutedims(Matrix(data[!, model.exogenous_variables]))
-    results = similar(Matrix(data[!, model.endogenous_variables])') # lags in
-    results[:, 1] = Matrix(data[1, model.exogenous_variables])'
-    function loss(params)
-        sol = prognose!(results, horizon, model, exos, param_values; method=:broyden)
+    reference_results = permutedims(Matrix(data[!, model.endogenous_variables]))
+    results = Matrix(data[!, model.endogenous_variables])' # lags in
+    results[:, 1] = Vector(data[1, model.endogenous_variables])'
+    param_values = map(x -> init_params[x], model.parameters)
+    param_opt_inidices = Int[]
+    for (i, p) in enumerate(model.parameters)
+        if p in opt_params
+            push!(param_opt_inidices, i)
+        end
+    end
+    var_opt_indices = Int[]
+    for (i, var) in enumerate(model.endogenous_variables)
+        if var in opt_vars
+            push!(var_opt_indices, i)
+        end
+    end
+    initial = map(x -> init_params[x], opt_params)
+
+    # println(exos)
+    # println(param_values)
+    # println(param_opt_inidices)
+    # println(var_opt_indices)
+    # println(initial)
+    horizon = 2:(ncol(data))
+
+    # Define loss function
+    function loss(p)
+        pvalues = Zygote.Buffer(param_values)
+        pvalues[param_opt_inidices] = p
+        bresults = Zygote.Buffer(results)
+        sol = prognose!(bresults, horizon, model, exos, copy(pvalues); method=:broyden)
         if sol == ReturnCode.Failure
             return Inf
         else
-            return ...
+            return Consistent.msrmse(reference_results, copy(bresults))
         end
     end
-    initial = ...
+
+    # Numerical optimization
     adtype = Optimization.AutoZygote()
     optf = Optimization.OptimizationFunction((x, p) -> loss(x), adtype)
     optprob = Optimization.OptimizationProblem(optf, initial)
-    res = Optimization.solve(optprob, ADAM(), maxiters = 1000)
+    res = Optimization.solve(optprob, BFGS(), maxiters = 1000)
     return res
 end
 
@@ -44,4 +73,6 @@ end
 
 # Convert results to DataFrame
 df = hcat(df, DataFrame(lags', sim.endogenous_variables))
-calibrate!(df, sim, Dict(:θ => 0.2), Dict(:α_1 => 0.5, :α_2 => 0.5))
+sol = calibrate(df, sim, [:Y, :T, :YD, :C], [:α_1, :α_2], Dict(:α_1 => 0.5, :α_2 => 0.5, :θ => 0.2))
+
+# Consistent.solve_nonlinear(sim, lags, exos[:, 1], param_values + 0.1 * rand(3))

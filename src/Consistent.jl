@@ -11,6 +11,7 @@ include("ConstructResiduals.jl")
 include("Macros.jl")
 include("CombineModels.jl")
 include("Solve.jl")
+include("Loss.jl")
 include("Prognose.jl")
 
 # Godley/Lavoie

@@ -19,8 +19,9 @@ end
 
 function solve_nonlinear(model, lags, exos, params; initial=fill(1.0, length(model.endogenous_variables)), method=:newton)
     prob = NonlinearSolve.NonlinearProblem(
-        (F, x, p) -> model.f!(F, x, lags, exos, params),
-        initial,#
+        (F, x, p) -> model.f!(F, x, lags, exos, p),
+        initial,
+        params,
         abstol = 1e-40, reltol = 1e-40
     )
     sol = NonlinearSolve.solve(prob, NonlinearSolve.TrustRegion())
