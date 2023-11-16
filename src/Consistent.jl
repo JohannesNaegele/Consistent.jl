@@ -1,7 +1,7 @@
 module Consistent
 
 export @parameters, @equations, @variables
-export model, solve, operators!, add_params, add_exos
+export model, solve, operators!, add_params, add_exos, prognose!
 
 include("Helpers.jl")
 include("ModelComponents.jl")
@@ -11,6 +11,7 @@ include("ConstructResiduals.jl")
 include("Macros.jl")
 include("CombineModels.jl")
 include("Solve.jl")
+include("Prognose.jl")
 
 # Godley/Lavoie
 include("models/SIM.jl")
