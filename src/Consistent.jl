@@ -1,7 +1,7 @@
 module Consistent
 
 export @parameters, @equations, @variables
-export model, solve, operators!, add_params, add_exos, prognose!
+export model, solve, operators!, add_params, add_exos, prognose!, onestep_prognose!
 
 include("Helpers.jl")
 include("ModelComponents.jl")
