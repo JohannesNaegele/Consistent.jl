@@ -1,9 +1,7 @@
 using NLsolve
 using LinearAlgebra
 import Optimization
-import Optim
 using NonlinearSolve
-using SimpleNonlinearSolve
 
 function solve(model, lags, exos, params; initial=fill(1.0, length(model.endogenous_variables)), method=:newton)
     nlsolve(
