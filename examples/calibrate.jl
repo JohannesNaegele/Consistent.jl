@@ -3,21 +3,26 @@ using DataFrames
 using Zygote
 using Optimization
 using OptimizationOptimJL
+using SciMLSensitivity
 
 function calibrate!(data, model, parameters=Dict(), initial_parameters=Dict())
-    exos = data...
-    lags = ...
-    F = similar(...)
-    function g!(F, x)
-        return model.f!(F, x, lags, exos, params)
-    end
+    exos = permutedims(Matrix(data[!, model.exogenous_variables]))
+    results = similar(Matrix(data[!, model.endogenous_variables])') # lags in
+    results[:, 1] = Matrix(data[1, model.exogenous_variables])'
     function loss(params)
-        sol = solve(model, lags, exos, params; initial=fill(1.0, length(model.endogenous_variables)), method=:newton)
+        sol = prognose!(results, horizon, model, exos, param_values; method=:broyden)
+        if sol == ReturnCode.Failure
+            return Inf
+        else
+            return ...
+        end
     end
-    deriv = x -> ForwardDiff.derivative(loss, x)
     initial = ...
-    prob = OptimizationProblem(loss, deriv, initial, p)
-    solve(prob, BFGS())
+    adtype = Optimization.AutoZygote()
+    optf = Optimization.OptimizationFunction((x, p) -> loss(x), adtype)
+    optprob = Optimization.OptimizationProblem(optf, initial)
+    res = Optimization.solve(optprob, ADAM(), maxiters = 1000)
+    return res
 end
 
 # Given data for exogenous variables
@@ -39,3 +44,4 @@ end
 
 # Convert results to DataFrame
 df = hcat(df, DataFrame(lags', sim.endogenous_variables))
+calibrate!(df, sim, Dict(:θ => 0.2), Dict(:α_1 => 0.5, :α_2 => 0.5))
