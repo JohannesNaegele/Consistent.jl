@@ -7,11 +7,11 @@ function solve(model, lags, exos, params; initial=fill(1.0, length(model.endogen
     nlsolve(
         (F, x) -> model.f!(F, x, lags, exos, params),
         initial,
-        autodiff = :forward,
-        method = method,
+        autodiff=:forward,
+        method=method,
         # iterations = 500,
-        ftol = 1e-40,
-        xtol = 1e-40
+        ftol=1e-40,
+        xtol=1e-40
     ).zero
 end
 
@@ -20,7 +20,8 @@ function solve_nonlinear(model, lags, exos, params; initial=fill(1.0, length(mod
         (F, x, p) -> model.f!(F, x, lags, exos, p),
         initial,
         params,
-        abstol = 1e-40, reltol = 1e-40
+        abstol=1e-40,
+        reltol=1e-40
     )
     sol = NonlinearSolve.solve(prob, method)
     return sol
