@@ -21,8 +21,8 @@ using Test
             y = z[-2] * x * b
         end
         @test Consistent.replace_vars(test_eqs.args[[2, 4]], [:z, :y], Symbol[:x], [:θ]) == [
-            :(z = endos[2] * (lags[2, end - 0] + 0.5 * endos[1]) * params[1] + exos[1, end - -1]),
-            :(y = lags[1, end - -1] * exos[1, end - 0] * b)
+            :(endos[1] = endos[2] * (lags[2, end - 0] + 0.5 * endos[1]) * params[1] + exos[1, end + -1]),
+            :(endos[2] = lags[1, end - -1] * exos[1, end + 0] * b)
         ]
 
         # test non-equation
