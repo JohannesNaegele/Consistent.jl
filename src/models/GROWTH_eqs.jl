@@ -34,7 +34,6 @@ firms₁ = model(
 # Box 11.3: Firms equations
 firms₂ = model(
     exos=@variables(Nfe, p, Rln, ER, BANDb),
-    verbose=true,
     eqs=@equations begin
         ωT = exp(ω₀ + ω₁ * log(PR) + ω₂ * log(ER + z₃ * (1.0 - ER) - z₄ * BANDₜ + z₅ * BANDb)) # 11.18: Real wage aspirations ???
         ER = N[-1] / Nfe[-1] # 11.19: Employment rate
@@ -402,4 +401,4 @@ end
 
 growth = aggr + firms₁ + firms₂ + firms₃ + firms₄ + hh₁ + hh₂ + hh₃ + gov + cb + banks₁ + banks₂
 growth = add_params(growth, Consistent.Variables(params_dict))
-growth = add_exos(growth, @variables(RA, GRpr, GRg, BANDb, BANDₜ, ER, NCAR, Rbbar, ADDbl, bot, top), true)
+growth = add_exos(growth, @variables(RA, GRpr, GRg, BANDb, BANDₜ, ER, NCAR, Rbbar, ADDbl, bot, top))
