@@ -23,7 +23,7 @@ function progn(model, lags, exos, param_values; method=NonlinearSolve.TrustRegio
     return results
 end
 
-@time results = progn(growth, lags, exos, param_values, method=:broyden)
+@time results = progn(growth, lags, exos, param_values)
 
 # Convert results to DataFrame
 df = DataFrame(results', growth.endogenous_variables)
