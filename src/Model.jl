@@ -30,7 +30,7 @@ function Base.show(io::IO, m::Model)
     print(io, Crayon(foreground = :blue), descriptors[3]); println(io, Crayon(reset=true), m.parameters)
     print(io, Crayon(foreground = :red), descriptors[4]); print(io, Crayon(reset=true))
     for i in eachindex(m.equations)
-        additional_space = div(length(m.equations), 10) - div(i, 10)
+        additional_space = Int(floor(log10(length(m.equations)))) - Int(floor(log10(i)))
         print(io, "\n", ' '^(max_width + max(additional_space, 0)), "($i)  ", m.equations[i])
     end
 end

@@ -17,8 +17,8 @@ function create_missing_indices(line::Expr, vars::Set, symbs::Set)
     completed_line = deepcopy(line)
     head = completed_line.head
     args = completed_line.args
-    for i in length(args):-1:2 # FIXME: why?
-        if (typeof(args[i]) == Symbol) && (head == :call) && args[i] in vars # create index
+    for i in length(args):-1:1 # FIXME: why backwards?
+        if (typeof(args[i]) == Symbol) && !(head == :ref) && args[i] in vars # create index
             args[i] = :($(args[i])[0])
         elseif typeof(args[i]) == Expr # recursion for nested expressions
             args[i] = create_missing_indices(args[i], vars, symbs)
@@ -74,7 +74,7 @@ function create_vars( # FIXME: read properly
                 position = findall(x -> x == args[1], exos)[1]
                 if length(args) == 2
                     if args[2] <= 0
-                        completed_line.args = [name[3], :($position), Expr(:call, :-, :end, args[2])]
+                        completed_line.args = [name[3], :($position), Expr(:call, :+, :end, args[2])]
                     else
                         error("future indices are not allowed!")
                     end

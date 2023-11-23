@@ -1,3 +1,5 @@
+using Statistics
+
 """
 Root-mean-square error of a time series.
 """
