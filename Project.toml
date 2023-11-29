@@ -30,6 +30,7 @@ MacroTools = "0.5"
 NLsolve = "4"
 OrderedCollections = "1"
 Pipe = "1"
+Statistics = "1"
 Zygote = "0.6"
 julia = "1"
 
