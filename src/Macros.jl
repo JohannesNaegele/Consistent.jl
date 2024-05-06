@@ -1,4 +1,4 @@
-function build_f!(endos, exos, params, args)
+function build_f!(endos, exos, params, args, verbose=false)
     endos = endos.variables
     exos = exos.variables
     params = params.variables
@@ -26,7 +26,11 @@ function build_f!(endos, exos, params, args)
     end
 
     # construct function for residuals of model variables
-    return MacroTools.striplines(:(Consistent.f! = $(construct_residuals(name, function_body, args))))
+    if verbose
+        return construct_residuals_for_print(name, function_body)
+    else
+        return construct_residuals(name, function_body)
+    end
 end
 
 """
@@ -80,16 +84,15 @@ function model(;
     end
 
     if verbose
-        println(build_f!(endos, exos, parameters, eqs.exprs))
+        println(MacroTools.striplines(build_f!(endos, exos, parameters, eqs.exprs, true).args[2]))
     end
 
-    eval(build_f!(endos, exos, parameters, eqs.exprs))
     return Model(
         endos,
         exos,
         parameters,
         eqs,
-        deepcopy(Consistent.f!)
+        eval(build_f!(endos, exos, parameters, eqs.exprs))
     )
 end
 
