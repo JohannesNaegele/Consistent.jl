@@ -25,6 +25,7 @@ priors_dict = @parameters begin
     α_1 = Uniform()
     α_2 = Uniform()
 end
+unobserved = @variables Y, T, YD, C
 
 # let's say we know that some kind of variables is prone to measurement error
 # if it is just a constant, we can introduce some bias variable
@@ -73,3 +74,7 @@ df[!, :period] = 1:nrow(df)
         color=:variable,
         Geom.line
     )
+
+function loglikelihood(results, model, exos, params_dict, unobserved, particles=10000)
+    # return log(sum(...))
+end
