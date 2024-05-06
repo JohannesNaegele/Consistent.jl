@@ -20,10 +20,13 @@ using Test
             z = y * (y[-1] + 0.5 * z) * θ + x[-1]
             y = z[-2] * x * b
         end
-        @test Consistent.replace_vars(test_eqs.args[[2, 4]], [:z, :y], Symbol[:x], [:θ]) == [
-            :(endos[1] = endos[2] * (lags[2, end - 0] + 0.5 * endos[1]) * params[1] + exos[1, end + -1]),
-            :(endos[2] = lags[1, end - -1] * exos[1, end + 0] * b)
-        ]
+        replace_worked = @test_warn "Symbols [:b] are not in variables or parameters" Consistent.replace_vars(
+                test_eqs.args[[2, 4]], [:z, :y], Symbol[:x], [:θ]
+            ) == [
+                :(endos[1] = endos[2] * (lags[2, end - 0] + 0.5 * endos[1]) * params[1] + exos[1, end + -1]),
+                :(endos[2] = lags[1, end - -1] * exos[1, end + 0] * b)
+            ]
+        @test replace_worked
 
         # test non-equation
         let eqs = @equations begin
