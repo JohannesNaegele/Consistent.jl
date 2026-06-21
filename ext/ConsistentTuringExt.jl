@@ -8,12 +8,13 @@ module ConsistentTuringExt
 # observation model.
 #
 # For gradient-based samplers (NUTS) also load `SciMLSensitivity` (it registers the
-# adjoints that make the per-period nonlinear solve differentiable) and pick an AD
-# backend. ForwardDiff works out of the box (`NUTS(; adtype = AutoForwardDiff())`).
-# Enzyme needs runtime activity enabled:
-#     using Enzyme
-#     adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse))
-#     sample(bm, NUTS(; adtype), n)
+# adjoints that make the per-period nonlinear solve differentiable) and choose an AD
+# backend via its ADTypes / DifferentiationInterface type. All of these are
+# validated through the solve:
+#     AutoForwardDiff()                                            # forward mode, no extra setup
+#     using Mooncake;  adtype = AutoMooncake(; config = nothing)   # reverse mode
+#     using Enzyme;    adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse))
+# then `sample(bm, NUTS(; adtype), n)`.
 
 using Consistent
 using Consistent: StochasticModel

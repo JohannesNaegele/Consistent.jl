@@ -8,10 +8,14 @@
 #   pkg> instantiate
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Consistent = "8b66aa27-75df-4a9a-a8d6-4c101d71c18d"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"

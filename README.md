@@ -161,8 +161,10 @@ sm = StochasticModel(
 bm = bayesian_model(sm, data; lags = lags, exos = exos,
                     fixed = Consistent.OrderedDict(:θ => 0.2))
 
-# ForwardDiff works out of the box; Enzyme needs runtime activity enabled
-adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse))
+# Choose any AD backend via its ADTypes / DifferentiationInterface type:
+adtype = AutoForwardDiff()                                                  # forward, no setup
+# adtype = AutoMooncake(; config = nothing)                                 # reverse (using Mooncake)
+# adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse)) # reverse (using Enzyme)
 chain  = sample(bm, NUTS(; adtype), 1000)
 ```
 
@@ -181,10 +183,14 @@ sm = StochasticModel(
 Gradients propagate through the recursive sequence of period solves (each period's
 lags are the previous period's parameter-dependent solution; with shocks, the
 exogenous inputs are latent too). See `examples/bayesian.jl` for a complete,
-runnable example that recovers known parameters from synthetic data.
+runnable example that recovers known parameters from synthetic data, and
+`examples/realdata.jl` for estimation on real data — pulled from the keyless World
+Bank REST API by `examples/refresh_data.jl` into a vendored CSV (so the example
+itself runs offline, with no API key).
 
 > Status: priors, latent variables, per-period `@random` shocks, and a Gaussian
-> observation model are implemented and validated under both ForwardDiff and Enzyme.
+> observation model are implemented and validated under ForwardDiff, Enzyme, and
+> Mooncake.
 
 ### Model calibration
 
