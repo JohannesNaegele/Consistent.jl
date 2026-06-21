@@ -14,9 +14,10 @@ using CommonSolve: solve
 # not a dependency of the package.
 using RecipesBase
 
-export @parameters, @equations, @variables
+export @parameters, @equations, @variables, @random, @observable
 export model, solve, operators!, add_params, add_exos, prognose!, onestep_prognose!
 export Scenario, param_values, block_decomposition, reorder
+export StochasticModel, bayesian_model
 
 include("Helpers.jl")
 include("ModelComponents.jl")
@@ -31,6 +32,7 @@ include("Scenario.jl")
 include("Plotting.jl")
 include("Loss.jl")
 include("Prognose.jl")
+include("Stochastic.jl")
 
 # Godley/Lavoie
 include("models/SIM.jl")

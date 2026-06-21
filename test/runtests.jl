@@ -262,4 +262,36 @@ using Test
         sel = RB.apply_recipe(Dict{Symbol,Any}(:vars => [:Y, :C]), sc.model, results)
         @test length(sel) == 2
     end
+
+    @testset "Probabilistic spec" begin
+        m = Consistent.SIM().model
+
+        # @observable / @random mechanics (plain values stand in for distributions)
+        @test (@observable Y, C) == Consistent.Variables([:Y, :C])
+        shocks = @random begin
+            G = 1.0
+        end
+        @test shocks[:G] == 1.0
+
+        sm = StochasticModel(m;
+            priors = (@parameters begin
+                α_1 = 0.6
+                α_2 = 0.4
+            end),
+            shocks = shocks,
+            observed = @observable(Y, C),
+        )
+        @test sm isa StochasticModel
+        @test Set(sm.observed) == Set([:Y, :C])
+        @test Set(Consistent.latent(sm)) == Set([:T, :YD, :H_s, :H_h, :H])
+        @test occursin("Probabilistic", sprint(show, sm))
+
+        # validation: keys must be valid parameters / exogenous / endogenous variables
+        @test_throws ErrorException StochasticModel(m; priors = (@parameters begin nope = 1 end))
+        @test_throws ErrorException StochasticModel(m; shocks = (@random begin Y = 1 end))
+        @test_throws ErrorException StochasticModel(m; observed = @observable(NotAVar))
+
+        # bayesian_model is unavailable until the Turing extension is loaded
+        @test_throws ErrorException bayesian_model(sm, zeros(2, 2))
+    end
 end

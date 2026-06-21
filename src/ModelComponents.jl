@@ -18,21 +18,36 @@ Variables() = Variables(Symbol[])
 
 MacroTools.@forward Variables.variables Base.getindex, Base.setindex!, Base.size
 
-macro variables(input...)
+# Shared parsing for the variable-list macros (`@variables`, `@observable`):
+# accepts a `begin ... end` block, a tuple, an array, or whitespace-separated names.
+function variables_from_input(input)
     if (length(input) > 0) && (input[1] isa Expr) && (input[1].head == :block)
         @assert (length(input) == 1) "Can't handle several blocks"
-        args = input[1].args
-        vars = filter(e -> isa(e, Symbol), args)
+        vars = filter(e -> isa(e, Symbol), input[1].args)
         return Variables(deepcopy(vars))
     else # convert potential tuple to array
         return Variables(remove_expr([handle_input(input)...]))
     end
 end
 
+macro variables(input...)
+    return variables_from_input(input)
+end
+
+# Shared expansion for the distribution/value-dict macros (`@parameters`,
+# `@random`): turns `name = expr` lines into an `OrderedDict(:name => expr, ...)`,
+# escaped so the right-hand sides evaluate in the caller's scope.
+function distribution_dict(block)
+    assignments = filter(e -> isa(e, Expr) && e.head == :(=), block.args)
+    pairs = [Expr(:call, :(=>), :(Symbol($("$(a.args[1])"))), a.args[2]) for a in assignments]
+    return esc(Expr(:call, :(Consistent.OrderedDict), pairs...))
+end
+
 """
 Macro to specify the parameters. Parameters typically can not change over time and can be calibrated to fit given data.
 
-Returns an OrderedDict.
+Returns an OrderedDict. Values may be numbers (point values) or, for Bayesian
+estimation, prior distributions (e.g. `α_1 = Normal(0.6, 0.01)`).
 
 # Example:
     @parameters begin
@@ -42,15 +57,34 @@ Returns an OrderedDict.
     end
 """
 macro parameters(block)
-    exprs = block.args
+    return distribution_dict(block)
+end
 
-    # Filter for assignments
-    assignments = filter(e -> isa(e, Expr) && e.head == :(=), exprs)
+"""
+Macro to declare observed endogenous variables for Bayesian estimation; the
+remaining endogenous variables are treated as latent. Same input forms as
+[`@variables`](@ref); returns a `Variables`.
 
-    # Extract variable names and their values as symbols with colons
-    pairs = [Expr(:call, :(=>), :(Symbol($("$(a.args[1])"))), a.args[2]) for a in assignments]
+# Example:
+    @observable Y, T, YD
+"""
+macro observable(input...)
+    return variables_from_input(input)
+end
 
-    return esc(Expr(:call, :(Consistent.OrderedDict), pairs...))
+"""
+Macro to declare stochastic shocks: exogenous variables that are drawn from a
+distribution each period. Returns an `OrderedDict` mapping each shock to its
+distribution.
+
+# Example:
+    @random begin
+        u_G = Normal(0, 1)
+        u_T = Normal(0, 0.25)
+    end
+"""
+macro random(block)
+    return distribution_dict(block)
 end
 
 """

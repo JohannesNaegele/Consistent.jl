@@ -1,67 +1,50 @@
+# Bayesian estimation of a stock-flow consistent model with Turing.
+#
+# Needs the Turing extension and the differentiable-solve stack:
+#   using Turing, SciMLSensitivity, Enzyme
 using Consistent
-using Distributions
-using DataFrames
-using Plots
+using Turing
+using SciMLSensitivity        # registers the adjoints that make the solve differentiable
+using Enzyme
 using Random
-# using Zygote
-# using Optimization
-# using OptimizationOptimJL
-# using SciMLSensitivity
+Random.seed!(1)
 
-# Given data for exogenous variables
-df = DataFrame(:G => fill(20, 60))
+# --- deterministic model ---------------------------------------------------
+m = Consistent.SIM().model
 
-# Define model
-scen = Consistent.SIM()
-sim = scen.model
-exos = permutedims(Matrix(df[!, sim.exogenous_variables]))
-lags = scen.lags
-params_dict = @parameters begin
-    θ = 0.2
-    α_1 = Normal(0.6, 0.01)
-    α_2 = Normal(0.4, 0.01)
+# --- synthetic "observed" data from known parameters -----------------------
+T = 30
+lags = zeros(length(m.endogenous_variables), 1)
+exos = fill(20.0, 1, T)
+true_params = [0.2, 0.6, 0.4]   # θ, α_1, α_2 (model parameter order)
+
+results = zeros(length(m.endogenous_variables), T)
+results[:, 1] = lags[:, 1]
+for t in 2:T
+    results[:, t] = solve(m, results[:, 1:t-1], exos[:, 1:t], true_params)
 end
-priors_dict = @parameters begin
-    α_1 = Uniform()
-    α_2 = Uniform()
-end
-unobserved = @variables Y, T, YD, C
+observed = @observable(Y, C)
+obs_idx = [findfirst(==(v), m.endogenous_variables) for v in observed]
+data = results[obs_idx, :] .+ 0.5 .* randn(length(observed), T)
 
-# let's say we know that some kind of variables is prone to measurement error
-# if it is just a constant, we can introduce some bias variable
-
-function solve(
-    model, lags, exos, params_dict::AbstractDict;
-    rng=Random.default_rng(),
-    initial=fill(1.0, length(model.endogenous_variables))
+# --- probabilistic layer: priors on α_1, α_2 (θ fixed), observe Y and C -----
+sm = StochasticModel(
+    m;
+    priors = (@parameters begin
+        α_1 = Normal(0.6, 0.1)
+        α_2 = Normal(0.4, 0.1)
+    end),
+    observed = observed,
 )
-    function sample_param(x)
-        if x isa Number
-            return x
-        else
-            return rand(rng, x)
-        end
-    end
-param_values = map(x -> sample_param(params_dict[x]), sim.parameters)
-    return Consistent.solve(
-        sim, lags, exos, param_values, initial=initial
-    )
-end
 
-# Solve model for 59 periods
-for i in 1:59
-    solution = solve(
-        sim,
-        lags,
-        exos[:, begin:i],
-        params_dict
-    )
-    lags = hcat(lags, solution)
-end
+bm = bayesian_model(sm, data; lags = lags, exos = exos,
+                    fixed = Consistent.OrderedDict(:θ => 0.2))
 
-# Plot selected endogenous variables over time
-plot(sim, lags; vars = [:Y, :C, :YD])
+# --- sample the posterior --------------------------------------------------
+# Enzyme (reverse mode) — needs runtime activity enabled:
+adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse))
+# Simpler alternative that works out of the box: adtype = AutoForwardDiff()
+chain = sample(bm, NUTS(0.65; adtype), 500)
 
-function loglikelihood(results, model, exos, params_dict, unobserved, particles=10000)
-    # return log(sum(...))
-end
+# Posterior should concentrate near α_1 = 0.6, α_2 = 0.4
+println(mean(chain))

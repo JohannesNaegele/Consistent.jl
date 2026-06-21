@@ -136,11 +136,60 @@ one equation** (appears on its left-hand side), erroring otherwise.
 
 ## Advanced usage
 
-### Probabilistic models
+### Probabilistic models (Bayesian estimation)
+
+Attach a probabilistic layer to a deterministic model with `StochasticModel`:
+prior distributions for parameters, `@observable` variables (the rest are latent),
+and `@random` per-period stochastic shocks. Bayesian inference is provided by a
+**Turing extension**: it activates when you load `Turing`, so the heavy sampling
+stack is not a dependency of the package.
+
+```julia
+using Consistent
+using Turing
+using SciMLSensitivity            # adjoints that make the period solve differentiable
+using Enzyme
+
+m = Consistent.SIM().model
+sm = StochasticModel(
+    m;
+    priors   = @parameters(begin α_1 = Normal(0.6, 0.1); α_2 = Normal(0.4, 0.1) end),
+    observed = @observable(Y, C),
+)
+
+# data: one row per observed variable, one column per period
+bm = bayesian_model(sm, data; lags = lags, exos = exos,
+                    fixed = Consistent.OrderedDict(:θ => 0.2))
+
+# ForwardDiff works out of the box; Enzyme needs runtime activity enabled
+adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse))
+chain  = sample(bm, NUTS(; adtype), 1000)
+```
+
+Per-period shocks are declared with `@random` and sampled as latent state-space
+variables:
+
+```julia
+sm = StochasticModel(
+    m;
+    priors   = @parameters(begin α_1 = Normal(0.6, 0.1) end),
+    shocks   = @random(begin u_G = Normal(0, 1); u_T = Normal(0, 0.25) end),
+    observed = @observable(Y, C),
+)
+```
+
+Gradients propagate through the recursive sequence of period solves (each period's
+lags are the previous period's parameter-dependent solution; with shocks, the
+exogenous inputs are latent too). See `examples/bayesian.jl` for a complete,
+runnable example that recovers known parameters from synthetic data.
+
+> Status: priors, latent variables, per-period `@random` shocks, and a Gaussian
+> observation model are implemented and validated under both ForwardDiff and Enzyme.
 
 ### Model calibration
 
-
+Point estimation by minimising a loss (`Loss.jl`) over parameters with autodiff is
+planned; see the [calibration issue](https://github.com/JohannesNaegele/Consistent.jl/issues/39).
 
 ## Syntax
 
