@@ -82,11 +82,9 @@ function model(;
     end
     isnothing(eqs) && error("No equations provided: pass `eqs` (or its alias `equations`).")
 
-    if params isa OrderedDict # FIXME: use promotion
-        parameters = Variables(params)
-    else # FIXME
-        parameters = params
-    end
+    # `Variables` has constructors for both an `OrderedDict` (from `@parameters`)
+    # and a `Variables`, so this accepts either form.
+    parameters = Variables(params)
 
     if isnothing(endos)
         endos = Variables(left_symbol.(eqs.exprs))

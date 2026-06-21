@@ -1,10 +1,12 @@
 """
-Find all symbols in an array of expressions.
+Find all variable symbols across an array of expressions. Operators and called
+function names are excluded (see [`find_symbols`](@ref)); external functions
+should be registered via [`operators!`](@ref).
 """
-function vars(lines::Vector) # FIXME: consider that some symbols are external functions
-    found::Set{Symbol} = Set([])
-    for i in eachindex(lines)
-        union!(found, find_symbols(lines[i]))
+function vars(lines::Vector)
+    found = Set{Symbol}()
+    for line in lines
+        union!(found, find_symbols(line))
     end
     return found
 end
@@ -17,7 +19,9 @@ function create_missing_indices(line::Expr, vars::Set, symbs::Set)
     completed_line = deepcopy(line)
     head = completed_line.head
     args = completed_line.args
-    for i in length(args):-1:1 # FIXME: why backwards?
+    # each entry is replaced in place (no length change), so iteration order only
+    # affects the order of the "unknown symbol" warning below
+    for i in eachindex(args)
         if (typeof(args[i]) == Symbol) && !(head == :ref) && args[i] in vars # create index
             args[i] = :($(args[i])[0])
         elseif typeof(args[i]) == Expr # recursion for nested expressions
@@ -37,9 +41,12 @@ function create_missing_indices(line::Expr, vars::Set, symbs::Set)
 end
 
 """
-Replace variables with their vector (matrix) representation.
+Replace each indexed variable reference `x[k]` with its position in the solver
+arrays: an endogenous variable becomes `endos[pos]` at the current period or
+`lags[pos, end-k]` when lagged, and an exogenous variable becomes
+`exos[pos, end+k]`. Recurses into nested expressions.
 """
-function create_vars( # FIXME: read properly
+function create_vars(
     line::Expr,
     vars::Set,
     endos::Array,

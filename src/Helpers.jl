@@ -1,17 +1,19 @@
 using MacroTools
 
 """
-Some variable names are interpreted as operators.
-Thus, we decompose expressions like :(a in b) in individual Symbols.
+Some variable names are parsed as operators, so a list like `Y, a in b` yields an
+`Expr` instead of separate symbols. We recover the individual names: for a binary
+infix call `:(a in b)` (`Expr(:call, :in, :a, :b)`) we return `[a, in, b]`, in
+source order.
 """
 function remove_expr(x::Expr)
-    if x.head == :call
+    # only a binary infix call (operator + two operands) is expected here
+    if x.head == :call && length(x.args) == 3
         return [x.args[2], x.args[1], x.args[3]]
-    # TODO: test whether this might have unintentional side effects
     elseif x.head == :block
         return x.args
     else
-        error("Can not handle $x")
+        error("Cannot interpret `$x` as a list of variable names.")
     end
 end
 
@@ -19,10 +21,13 @@ end
 We expect an array of variable names; some however form an Expr instead of being individual Symbols.
 """
 function remove_expr(x::Array)
-    # we need a deepcopy to avoid issues with recursive changes
+    # deepcopy so we never mutate the caller's array while splicing
     untangled = deepcopy(x)
-    for i in reverse(eachindex(x)) # FIXME: why?
-        if typeof(untangled[i]) == Expr
+    # Iterate back-to-front: expanding entry `i` into several entries shifts the
+    # positions after it, so visiting higher indices first keeps the lower (not
+    # yet processed) indices aligned with `x`.
+    for i in reverse(eachindex(x))
+        if untangled[i] isa Expr
             untangled = [
                 untangled[1:(i-1)];
                 remove_expr(untangled[i]);
@@ -56,12 +61,17 @@ function remove_blocks(expr::Expr)
 end
 
 """
-Find all symbols in an Expr aside from the math operators.
+Find all variable symbols in an `Expr`, ignoring operators and the names of called
+functions (e.g. `log` in `log(x)`).
 """
 function find_symbols(line::Expr)
-    found::Set{Symbol} = Set([])
+    found = Set{Symbol}()
     args = line.args
-    for i in eachindex(args)
+    # In a call `f(a, b)` (and infix `a + b`) args[1] is the callee, not a
+    # variable, so skip it. For every other head (`:ref`, `:(=)`, ...) all args
+    # may contain variables. Registered operators/functions are dropped below.
+    start = line.head === :call ? 2 : 1
+    for i in start:lastindex(args)
         if args[i] isa Symbol
             push!(found, args[i])
         elseif args[i] isa Expr
@@ -72,9 +82,13 @@ function find_symbols(line::Expr)
 end
 
 """
-Get the symbol farthest to the left in an Expr.
+Get the symbol farthest to the left in an `Expr` — the variable an equation
+determines. We need not inspect `.head`: the determined variable is simply the
+leftmost symbol that is not a registered operator/function (see `math_operators`
+and `operators!`). Callables such as `log`/`exp` must be registered, so they are
+skipped here just like `+`/`-`.
 """
-function left_symbol(line::Expr) # TODO: why do we not need to check heads?
+function left_symbol(line::Expr)
     args = line.args
     for i in eachindex(args)
         if args[i] isa Symbol && !(args[i] in math_operators)

@@ -1,9 +1,15 @@
 using OrderedCollections
 import Base
 
-# Wrapper for vector of symbols
+"""
+    Variables(vars::Vector{Symbol})
+
+An ordered list of variable names — endogenous, exogenous, or parameters. Wraps a
+`Vector{Symbol}` and behaves like one; build it with the [`@variables`](@ref) macro
+or from an `OrderedDict` of parameters.
+"""
 struct Variables <: AbstractVector{Symbol}
-    variables::Vector{Symbol} # TODO: add documentation for variables
+    variables::Vector{Symbol}
 end
 
 Variables(x::OrderedDict) = Variables([k for (k, v) in x])
@@ -47,11 +53,26 @@ macro parameters(block)
     return esc(Expr(:call, :(Consistent.OrderedDict), pairs...))
 end
 
+"""
+    Equations(exprs::Vector{Expr})
+
+An ordered list of model equations. Wraps a `Vector{Expr}` and behaves like one;
+build it with the [`@equations`](@ref) macro.
+"""
 struct Equations <: AbstractVector{Expr}
     exprs::Vector{Expr}
 end
-# FIXME: print as strings
 MacroTools.@forward Equations.exprs Base.getindex, Base.setindex!, Base.size
+
+# Display equations as readable strings (`Y = C + G`) rather than quoted
+# expressions (`:(Y = C + G)`).
+function Base.show(io::IO, ::MIME"text/plain", eqs::Equations)
+    print(io, length(eqs), "-element Equations:")
+    for eq in eqs
+        print(io, "\n ", string(eq))
+    end
+end
+Base.show(io::IO, eqs::Equations) = print(io, "Equations([", join(string.(eqs), "; "), "])")
 
 """
 Macro to specify the model equations. Use `begin ... end`.
@@ -62,7 +83,9 @@ Macro to specify the model equations. Use `begin ... end`.
     end
 """
 macro equations(input...)
-    ex = remove_blocks(MacroTools.striplines(input...)) # TODO: better debugging with LineNumberNodes
+    # striplines keeps the stored equations free of LineNumberNodes so they print
+    # cleanly and compare/hash by content
+    ex = remove_blocks(MacroTools.striplines(input...))
     @assert (ex.head == :block) "Block input expected" # we need block input (begin ... end)
     return Equations(deepcopy(ex.args))
 end

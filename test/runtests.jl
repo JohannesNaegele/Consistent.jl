@@ -16,6 +16,25 @@ using Test
         @test isnothing(Consistent.left_symbol(:(1 = 1)))
 
         @test Consistent.remove_expr([:x :(a in b) :y]) == [:x, :a, :in, :b, :y]
+        # only binary infix calls are valid in a variable list
+        @test_throws ErrorException Consistent.remove_expr(:(f(x)))
+
+        # find_symbols collects variables, not operators or called functions
+        @test Consistent.find_symbols(:(Y = log(X))) == Set([:Y, :X])
+        @test Consistent.find_symbols(:(C = α_1 * YD + α_2 * H[-1])) ==
+              Set([:C, :α_1, :YD, :α_2, :H])
+
+        # equations print as readable strings, not quoted expressions
+        let eqs = @equations begin
+                Y = C + G
+                H_s + H_s[-1] = G - T
+            end
+            str = sprint(show, MIME("text/plain"), eqs)
+            @test occursin("Y = C + G", str)
+            @test occursin("H_s + H_s[-1] = G - T", str)
+            @test !occursin(":(", str)
+        end
+
         test_eqs = quote
             z = y * (y[-1] + 0.5 * z) * θ + x[-1]
             y = z[-2] * x * b
