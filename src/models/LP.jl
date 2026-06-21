@@ -15,9 +15,7 @@ function LP()
         r_b_exo = 0.03
         p_bL_exo = 20.
     end
-    Dict(
-        :params => params,
-        :model => model(
+    lp = model(
             exos = @variables(G),
             params = params,
             eqs = @equations begin
@@ -47,7 +45,5 @@ function LP()
                 p_bL = p_bL_exo
             end
         )
-    )
+    return Scenario(lp; params=params, exos=fill(20.0, 1, 1))
 end
-
-# G = 20.

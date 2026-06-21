@@ -13,11 +13,11 @@ exos = hcat(exos_const, exos_const)
 param_values = map(x -> Float64(params_dict[x]), growth.parameters)
 
 # Solve model for T periods
-function progn(model, lags, exos, param_values; method=NonlinearSolve.TrustRegion())
+function progn(model, lags, exos, param_values; method=:trust_region)
     results = zeros(length(model.endogenous_variables), T)
     results[:, 1] = lags
     for i in 1:(T-1)
-        solution = Consistent.solve_nonlinear(model, results[:, i], exos, param_values, initial=results[:, i], method=method)
+        solution = solve(model, results[:, i], exos, param_values; initial=results[:, i], method=method)
         results[:, i+1] = solution
     end
     return results
@@ -25,7 +25,7 @@ end
 
 @time results = progn(growth, lags, exos, param_values)
 # compare:
-# @time results = progn(growth, lags, exos, param_values, method=NonlinearSolve.GeneralBroyden())
+# @time results = progn(growth, lags, exos, param_values; method=:broyden)
 
 # Convert results to DataFrame
 df = DataFrame(results', growth.endogenous_variables)

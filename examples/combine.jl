@@ -27,5 +27,6 @@ PC_hh = model(
     end
 )
 
-# Note: Since the variables and equations are ordered this operation is not commutative!
+# Combining models is commutative up to ordering: `PC_gdp + PC_hh == PC_hh + PC_gdp`.
+# Use `reorder(PC_complete)` for a canonical block-triangular layout.
 PC_complete = PC_gdp + PC_hh

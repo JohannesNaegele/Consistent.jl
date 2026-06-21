@@ -11,10 +11,11 @@ using SciMLSensitivity
 df = DataFrame(:G => 20 .+ 10 * rand(60))
 
 # Define model
-sim = Consistent.SIM()[:model]
+scen = Consistent.SIM()
+sim = scen.model
 exos = permutedims(Matrix(df[!, sim.exogenous_variables]))
-lags = Consistent.SIM()[:lags]
-params_dict = Consistent.SIM()[:params]
+lags = scen.lags
+params_dict = scen.params
 param_values = map(x -> params_dict[x], sim.parameters)
 
 # Solve model for 59 periods
@@ -58,11 +59,11 @@ function calibrate(data, model, opt_vars, opt_params, init_params)
         pvalues[param_opt_inidices] = p
         bresults = Zygote.Buffer(results)
         bresults[:] = results
-        # sol = prognose!(bresults, horizon, model, exos, copy(pvalues); method=:broyden)
-        sol = onestep_prognose!(bresults, results, horizon, model, exos, copy(pvalues); method=:broyden)
+        # converged = prognose!(bresults, horizon, model, exos, copy(pvalues))
+        converged = onestep_prognose!(bresults, results, horizon, model, exos, copy(pvalues))
         # println(copy(bresults))
         # println(copy(pvalues))
-        if sol == ReturnCode.Failure
+        if !converged
             return Inf
         else
             # println(copy(bresults[:, 2:end]))
@@ -82,8 +83,8 @@ sol = calibrate(df, sim, [:Y, :C], [:α_1, :α_2], Dict(:α_1 => 0.5, :α_2 => 0
 
 # Compare to fit
 fitted = deepcopy(lags)
-prognose!(fitted, 2:60, sim, exos, vcat(0.2, sol.u); method=:broyden)
-# prognose!(fitted, 2:60, sim, exos, vcat(0.2, [0.6, 0.4]); method=:broyden)
+prognose!(fitted, 2:60, sim, exos, vcat(0.2, sol.u))
+# prognose!(fitted, 2:60, sim, exos, vcat(0.2, [0.6, 0.4]))
 
 df_fitted = DataFrame(fitted', sim.endogenous_variables)
 df_fitted[!, :period] = 1:nrow(df)

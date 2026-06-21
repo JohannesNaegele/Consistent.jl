@@ -70,9 +70,18 @@ function model(;
     endos=nothing::Union{Variables, Nothing},
     exos=Variables(),
     params=Variables()::Union{Variables, OrderedDict},
-    eqs,
+    eqs=nothing,
+    equations=nothing, # alias for `eqs`
     verbose=false
 )
+    # `equations` is an alias for `eqs`
+    if isnothing(eqs)
+        eqs = equations
+    elseif !isnothing(equations)
+        error("Pass either `eqs` or its alias `equations`, not both.")
+    end
+    isnothing(eqs) && error("No equations provided: pass `eqs` (or its alias `equations`).")
+
     if params isa OrderedDict # FIXME: use promotion
         parameters = Variables(params)
     else # FIXME
@@ -83,17 +92,34 @@ function model(;
         endos = Variables(left_symbol.(eqs.exprs))
     end
 
+    # Structural checks: the system must be square (one equation per endogenous
+    # variable) and each endogenous variable must be determined by exactly one
+    # equation, i.e. appear on its left-hand side.
+    if length(endos) != length(eqs)
+        error("Model is not square: $(length(eqs)) equations for $(length(endos)) endogenous variables.")
+    end
+    lhs = left_symbol.(eqs.exprs)
+    if Set(lhs) != Set(endos)
+        undetermined = collect(setdiff(Set(endos), Set(lhs)))
+        undeclared = collect(setdiff(Set(lhs), Set(endos)))
+        msg = "Each endogenous variable must be determined by exactly one equation (on its left-hand side)."
+        isempty(undetermined) || (msg *= "\n  No defining equation: $undetermined")
+        isempty(undeclared) || (msg *= "\n  Left-hand side but not declared endogenous: $undeclared")
+        error(msg)
+    end
+    if !allunique(lhs)
+        dups = unique([s for s in lhs if count(==(s), lhs) > 1])
+        error("These variables are determined by more than one equation: $dups")
+    end
+
     if verbose
         println(MacroTools.striplines(build_f!(endos, exos, parameters, eqs.exprs, true).args[2]))
     end
 
-    return Model(
-        endos,
-        exos,
-        parameters,
-        eqs,
-        eval(build_f!(endos, exos, parameters, eqs.exprs))
-    )
+    # Compile `f!` via RuntimeGeneratedFunctions instead of `eval` (no world-age
+    # problems, no namespace pollution, thread-safe instantiation).
+    f! = @RuntimeGeneratedFunction(build_f!(endos, exos, parameters, eqs.exprs))
+    return Model(endos, exos, parameters, eqs, f!)
 end
 
 operators!(x) = union!(math_operators, x)

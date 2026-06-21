@@ -13,9 +13,7 @@ function DIS()
         add = 0.02
         ε = 0.75
     end
-    Dict(
-        :params => params,
-        :model => model(
+    dis = model(
             params = params,
             eqs = @equations begin
                 y = s_e + (in_e[0] - in[-1])
@@ -45,6 +43,6 @@ function DIS()
                 c = α_0 + α_1 * yd_e_hs + α_2 * m_h[-1]
                 yd_e_hs = ε * yd_hs[-1] + (1 - ε) * yd_e_hs[-1]
             end
-        ),
-    )
+        )
+    return Scenario(dis; params=params)
 end

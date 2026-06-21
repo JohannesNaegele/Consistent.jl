@@ -13,9 +13,10 @@ using Random
 df = DataFrame(:G => fill(20, 60))
 
 # Define model
-sim = Consistent.SIM()[:model]
+scen = Consistent.SIM()
+sim = scen.model
 exos = permutedims(Matrix(df[!, sim.exogenous_variables]))
-lags = Consistent.SIM()[:lags]
+lags = scen.lags
 params_dict = @parameters begin
     θ = 0.2
     α_1 = Normal(0.6, 0.01)

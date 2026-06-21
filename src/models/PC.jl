@@ -1,6 +1,5 @@
 function PC()
-    Dict(
-        :model => model(
+    pc = model(
             endos = @variables(Y, YD, T, V, C, H_h, B_h, B_s, H_s, B_cb, r),
             exos = @variables(r_exo, G),
             params = @variables(α_1, α_2, λ_0, λ_1, λ_2, θ),
@@ -18,5 +17,5 @@ function PC()
                 r = r_exo
             end
         )
-    )
+    return Scenario(pc)
 end

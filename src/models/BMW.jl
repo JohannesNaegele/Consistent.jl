@@ -3,8 +3,7 @@ Note: This is some old model where I don't know the origin anymore.
 It is probably related to some Peter Bofinger textbook.
 """
 function BMW()
-    Dict(
-        :model => model(
+    bmw = model(
             exos = @variables(r_exo),
             params = @variables(α_0, α_1_w, α_1_r, α_2, δ, κ, γ, pr),
             eqs = @equations begin
@@ -32,5 +31,5 @@ function BMW()
                 M_d = M_h
             end
         )
-    )
+    return Scenario(bmw)
 end

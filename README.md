@@ -99,6 +99,49 @@ df[!, :period] = 1:nrow(df)
 
 An example with actual data can be found here.
 
+`solve` returns the vector of solved endogenous variable values (ordered as in
+`model.endogenous_variables`). It is a method of `CommonSolve.solve` — the same
+generic function used by `NonlinearSolve`/`DifferentialEquations` — so loading
+both packages does not clash on the name. Pass `method` to pick the algorithm:
+`:newton` (default, via NLsolve) or `:trust_region`, `:broyden`,
+`:newton_raphson` (via NonlinearSolve).
+
+## Predefined models
+
+The built-in models (`SIM`, `SIMStoch`, `LP`, `DIS`, `PC`, `BMW`) each return a
+`Scenario`: the model bundled with a parameter calibration and data to run it.
+
+```julia
+sim = Consistent.SIM()      # a Scenario
+sim.model                   # the Model
+sim.params                  # calibration (OrderedDict)
+sim.exos                    # exogenous data
+sim.lags                    # initial lags
+param_values(sim)           # parameter values in model order
+
+solve(sim)                  # solve one period using the bundled data
+```
+
+## Composition and structure
+
+Models are values and compose with `+`. Composition is commutative up to
+ordering — `a + b == b + a` — and `reorder` returns a canonical
+block-triangular layout:
+
+```julia
+combined = PC_gdp + PC_hh
+block_decomposition(combined)   # simultaneous blocks, in solvable order
+reorder(combined)               # equivalent model, canonical ordering
+```
+
+`block_decomposition` ignores lagged terms (which are predetermined), so each
+block is a set of variables that must be solved simultaneously, returned in an
+order where every block depends only on itself and earlier blocks.
+
+Model construction validates that the system is **square** (one equation per
+endogenous variable) and that each endogenous variable is **determined by exactly
+one equation** (appears on its left-hand side), erroring otherwise.
+
 ## Advanced usage
 
 ### Probabilistic models
@@ -156,8 +199,35 @@ function f!(diff, endos, lags, exos, params)
 end
 ```
 
+### The `solve` function and CommonSolve
+
+[`CommonSolve.jl`](https://github.com/SciML/CommonSolve.jl) is a tiny package
+whose only job is to *declare* the generic functions `solve`, `solve!`, and
+`init` — it ships no methods of its own. Its purpose is to give the ecosystem one
+shared `solve` function that many unrelated packages can add methods to without
+depending on each other. `NonlinearSolve`, `DifferentialEquations`, `Optimization`,
+`JuMP`, … all extend this same `CommonSolve.solve`.
+
+`Consistent` does the same: instead of defining its own `solve`, it adds a method
+
+```julia
+function CommonSolve.solve(model::Model, lags, exos, params; method, initial)
+    # ... wraps NLsolve / NonlinearSolve around model.f! ...
+end
+```
+
+Because `Consistent.solve` and e.g. `NonlinearSolve.solve` are then *the same
+function object* (just with different methods), Julia picks the right one by the
+types of the arguments. So `using Consistent, NonlinearSolve` does **not** produce
+an ambiguous-name warning, and you never have to write `Consistent.solve` to
+disambiguate — the call `solve(model, lags, exos, params)` dispatches to our
+method on `::Model`, while `solve(prob, alg)` dispatches to NonlinearSolve's.
+
 ## Remarks
 
-Currently the model instantiation is not thread-safe.
+The model residual function `f!` is compiled with
+[`RuntimeGeneratedFunctions.jl`](https://github.com/SciML/RuntimeGeneratedFunctions.jl)
+instead of `eval`, so model instantiation is thread-safe and free of world-age
+issues (a freshly built model can be solved within the same function scope).
 
 Feel free to ask questions and report bugs via issues!

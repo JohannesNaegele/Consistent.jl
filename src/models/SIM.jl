@@ -20,10 +20,5 @@ function SIM()
         end
     )
 
-    Dict(
-        :params => params,
-        :exos => [20.0][:, :],
-        :lags => fill(0.0, length(sim.endogenous_variables), 1),
-        :model => sim
-    )
+    return Scenario(sim; params=params, exos=fill(20.0, 1, 1))
 end

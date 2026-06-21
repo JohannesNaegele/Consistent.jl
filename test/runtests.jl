@@ -95,13 +95,12 @@ using Test
 
     @testset "Default models" begin
         sim = Consistent.SIM()
-        @test sim[:model].exogenous_variables.variables == [:G]
-        show(sim)
-        Consistent.SIMStoch()
-        Consistent.LP()
-        Consistent.PC()
-        Consistent.DIS()
-        Consistent.BMW()
+        @test sim isa Scenario
+        @test sim.model.exogenous_variables.variables == [:G]
+        @test occursin("SFC scenario", sprint(show, sim))
+        for f in (Consistent.SIMStoch, Consistent.LP, Consistent.PC, Consistent.DIS, Consistent.BMW)
+            @test f() isa Scenario
+        end
     end
 
     @testset "Combine models" begin
@@ -137,13 +136,86 @@ using Test
 
     @testset "Solve" begin
         sim = Consistent.SIM()
-        let sol = solve(
-                sim[:model],
-                sim[:lags],
-                sim[:exos],
-                map(x -> sim[:params][x], sim[:model].parameters)
-            )
-            @test round(sol[1]) == 38.0
+        sol = solve(sim.model, sim.lags, sim.exos, param_values(sim))
+        @test round(sol[1]) == 38.0
+        # convenience method on a Scenario
+        @test round(solve(sim)[1]) == 38.0
+        # NonlinearSolve backend agrees with the NLsolve default
+        @test round(solve(sim; method=:trust_region)[1]) == 38.0
+    end
+
+    @testset "Structural checks" begin
+        # not square: 2 endogenous variables, 1 equation
+        @test_throws ErrorException model(
+            endos = @variables(Y, C),
+            exos = @variables(G),
+            eqs = @equations begin
+                Y = C + G
+            end
+        )
+        # square, but `Y` is determined twice and `Z` never
+        @test_throws ErrorException model(
+            endos = @variables(Y, Z),
+            exos = @variables(G),
+            eqs = @equations begin
+                Y = G
+                Y = G + Z
+            end
+        )
+        # every predefined model is square
+        for f in (Consistent.SIM, Consistent.SIMStoch, Consistent.LP,
+                  Consistent.PC, Consistent.DIS, Consistent.BMW)
+            m = f().model
+            @test length(m.equations) == length(m.endogenous_variables)
         end
+    end
+
+    @testset "Structure / composition" begin
+        sc = Consistent.SIM()
+        m = sc.model
+
+        # block decomposition partitions the endogenous variables ...
+        blocks = block_decomposition(m)
+        @test sort(reduce(vcat, blocks), by=string) ==
+              sort(collect(m.endogenous_variables), by=string)
+        # ... the simultaneous core {Y, T, YD, C} is a single block ...
+        core = only(filter(b -> length(b) > 1, blocks))
+        @test Set(core) == Set([:Y, :T, :YD, :C])
+        # ... and recursive variables come after it
+        @test findfirst(b -> :Y in b, blocks) < findfirst(b -> :H in b, blocks)
+
+        # reorder gives an equal model that still solves to the same value
+        rm = reorder(m)
+        @test rm == m
+        solr = solve(rm, sc.lags, sc.exos, param_values(sc))
+        @test round(solr[findfirst(==(:Y), rm.endogenous_variables)]) == 38.0
+
+        # composition is commutative (equal up to ordering)
+        PC_gdp = model(
+            endos = @variables(Y, YD, T, V, C),
+            exos = @variables(r, G, B_h),
+            params = @variables(α_1, α_2, θ),
+            eqs = @equations begin
+                Y = C + G
+                YD = Y - T + r[-1] * B_h[-1]
+                T = θ * (Y + r[-1] * B_h[-1])
+                V = V[-1] + (YD - C)
+                C = α_1 * YD + α_2 * V[-1]
+            end
+        )
+        PC_hh = model(
+            endos = @variables(H_h, B_h, B_s, H_s, B_cb, r),
+            exos = @variables(r_exo, G, V, YD, T),
+            params = @variables(λ_0, λ_1, λ_2),
+            eqs = @equations begin
+                H_h = V - B_h
+                B_h = (λ_0 + λ_1 * r - λ_2 * (YD / V)) * V
+                B_s = (G + r[-1] * B_s[-1]) - (T + r[-1] * B_cb[-1]) + B_s[-1]
+                H_s = B_cb - B_cb[-1] + H_s[-1]
+                B_cb = B_s - B_h
+                r = r_exo
+            end
+        )
+        @test PC_gdp + PC_hh == PC_hh + PC_gdp
     end
 end

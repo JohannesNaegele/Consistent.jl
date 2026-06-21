@@ -1,21 +1,55 @@
 using NLsolve
 using LinearAlgebra
-import Optimization
 using NonlinearSolve
 
-function solve(model, lags, exos, params; initial=fill(1.0, length(model.endogenous_variables)), method=:newton)
-    nlsolve(
-        (F, x) -> model.f!(F, x, lags, exos, params),
-        initial,
-        autodiff=:forward,
-        method=method,
-        # iterations = 500,
-        ftol=1e-40,
-        xtol=1e-40
-    ).zero
+# Map a method symbol to a NonlinearSolve algorithm.
+function _nonlinear_alg(method::Symbol)
+    method === :trust_region && return NonlinearSolve.TrustRegion()
+    method === :broyden      && return NonlinearSolve.Broyden()
+    method === :newton_raphson && return NonlinearSolve.NewtonRaphson()
+    error("Unknown method `:$method`. Use :newton, :trust_region, :broyden, or :newton_raphson.")
 end
 
-function solve_nonlinear(model, lags, exos, params; initial=fill(1.0, length(model.endogenous_variables)), method=TrustRegion())
+"""
+    solve(model, lags, exos, params; initial, method) -> Vector
+
+Solve `model` for a single period and return the vector of endogenous variable
+values, ordered as in `model.endogenous_variables`.
+
+`method` selects the algorithm:
+- `:newton` (default) — NLsolve's Newton method;
+- `:trust_region`, `:broyden`, `:newton_raphson` — the corresponding NonlinearSolve algorithms.
+
+This is a method of `CommonSolve.solve`, so it shares the `solve` name with
+NonlinearSolve/DifferentialEquations without clashing.
+"""
+function CommonSolve.solve(
+    model::Model, lags, exos, params;
+    initial=fill(1.0, length(model.endogenous_variables)),
+    method::Symbol=:newton
+)
+    if method === :newton
+        return nlsolve(
+            (F, x) -> model.f!(F, x, lags, exos, params),
+            initial,
+            autodiff=:forward,
+            ftol=1e-40,
+            xtol=1e-40
+        ).zero
+    else
+        return _solve_nonlinear(
+            model, lags, exos, params; initial=initial, alg=_nonlinear_alg(method)
+        ).u
+    end
+end
+
+# Internal: returns the raw NonlinearSolve solution (with `.u` and `.retcode`).
+# Used by the forecasting routines, which need convergence information.
+function _solve_nonlinear(
+    model::Model, lags, exos, params;
+    initial=fill(1.0, length(model.endogenous_variables)),
+    alg=NonlinearSolve.TrustRegion()
+)
     prob = NonlinearProblem(
         (F, x, p) -> model.f!(F, x, lags, exos, p),
         initial,
@@ -23,16 +57,5 @@ function solve_nonlinear(model, lags, exos, params; initial=fill(1.0, length(mod
         abstol=1e-40,
         reltol=1e-40
     )
-    sol = NonlinearSolve.solve(prob, method)
-    return sol
+    return NonlinearSolve.solve(prob, alg)
 end
-
-# function solve_optim(model, lags, exos, params; initial=fill(1.0, length(model.endogenous_variables)), method=:newton)
-#     f = (x, y) -> model.f!(x, y, lags, exos, params)
-#     prob = Optimization.OptimizationProblem(
-#         x -> max(norm(f(x, y)) + abs(f(x, y)[1] - f(x, y)[1])),
-#         initial,
-#         Optimization.AutoForwardDiff()
-#     )
-#     sol = Optimization.solve(prob, Optim.BFGS())
-# end
