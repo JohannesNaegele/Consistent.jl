@@ -237,4 +237,29 @@ using Test
         )
         @test PC_gdp + PC_hh == PC_hh + PC_gdp
     end
+
+    @testset "Difference operator" begin
+        # Δ(x) == x - x[-1]
+        @test (@equations begin Δ(M) = F end)[1] == (@equations begin M - M[-1] = F end)[1]
+        # Δ(x, n) == x - x[-n]
+        @test (@equations begin Y = Δ(X, 2) end)[1] == (@equations begin Y = X - X[-2] end)[1]
+        # Δ of an already lagged variable
+        @test (@equations begin Y = Δ(X[-1]) end)[1] == (@equations begin Y = X[-1] - X[-2] end)[1]
+        # and it solves: M - M[-1] = F  =>  M = M[-1] + F = 10 + 5
+        m = model(endos = @variables(M), exos = @variables(F), eqs = @equations begin
+            Δ(M) = F
+        end)
+        sol = solve(m, reshape([10.0], 1, 1), reshape([5.0], 1, 1), Float64[])
+        @test sol[1] ≈ 15.0
+    end
+
+    @testset "Plot recipe" begin
+        sc = Consistent.SIM()
+        results = hcat(sc.lags, sc.lags, sc.lags)  # 7×3 dummy trajectory
+        RB = Consistent.RecipesBase
+        all_series = RB.apply_recipe(Dict{Symbol,Any}(), sc.model, results)
+        @test length(all_series) == length(sc.model.endogenous_variables)
+        sel = RB.apply_recipe(Dict{Symbol,Any}(:vars => [:Y, :C]), sc.model, results)
+        @test length(sel) == 2
+    end
 end

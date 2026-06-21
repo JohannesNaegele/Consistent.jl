@@ -1,7 +1,6 @@
 using Consistent
 using DataFrames
-using Pipe
-using Gadfly
+using Plots
 using Zygote
 using Optimization
 using OptimizationOptimJL
@@ -86,16 +85,6 @@ fitted = deepcopy(lags)
 prognose!(fitted, 2:60, sim, exos, vcat(0.2, sol.u))
 # prognose!(fitted, 2:60, sim, exos, vcat(0.2, [0.6, 0.4]))
 
-df_fitted = DataFrame(fitted', sim.endogenous_variables)
-df_fitted[!, :period] = 1:nrow(df)
-df_all = hcat(df, df_fitted, makeunique=true)
-@pipe df_all |>
-    select(_, [:Y, :Y_1, :C, :C_1, :period]) |>
-    stack(_, Not(:period), variable_name=:variable) |>
-    plot(
-        _,
-        x=:period,
-        y=:value,
-        color=:variable,
-        Geom.line
-    )
+# Compare data (solid) with the fitted trajectory (dashed) for selected variables
+plt = plot(sim, lags; vars = [:Y, :C])
+plot!(plt, sim, fitted; vars = [:Y, :C], linestyle = :dash)

@@ -1,8 +1,5 @@
 using Consistent
-using DataFrames
-using Pipe
-using Gadfly
-using NonlinearSolve
+using Plots
 
 include("GROWTH_eqs.jl")
 
@@ -27,24 +24,11 @@ end
 # compare:
 # @time results = progn(growth, lags, exos, param_values; method=:broyden)
 
-# Convert results to DataFrame
-df = DataFrame(results', growth.endogenous_variables)
-# Add time column
-df[!, :period] = 1:nrow(df)
-# Select variables, convert to long format, and plot variables
-@pipe df |> # Bs
-      transform(_, [:Bbd, :Bbs, :Bs, :V] .=> (x -> x ./ _.K) .=> [:Bbd, :Bbs, :Bs, :V]) |>
-      select(_, [:Bbs, :Bbd, :period]) |>
-      # select(_, :V, :period) |>
-      stack(_, Not(:period), variable_name=:variable) |>
-      # subset(_, :period => ByRow(<(100))) |>
-      plot(
-          _,
-          x=:period,
-          y=:value,
-          color=:variable,
-          Geom.line
-      )
+# Plot bank bonds supplied/demanded as a share of capital K
+row(v) = results[findfirst(==(v), growth.endogenous_variables), :]
+K = row(:K)
+plot(1:T, row(:Bbs) ./ K; label = "Bbs/K", xlabel = "period")
+plot!(1:T, row(:Bbd) ./ K; label = "Bbd/K")
 
 # @report_opt Consistent.f!(a, lags, lags, exos, param_values)
 # growth.equations[findfirst(==(:G), growth.endogenous_variables)]

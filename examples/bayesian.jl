@@ -1,8 +1,7 @@
 using Consistent
 using Distributions
 using DataFrames
-using Pipe
-using Gadfly
+using Plots
 using Random
 # using Zygote
 # using Optimization
@@ -60,21 +59,8 @@ for i in 1:59
     lags = hcat(lags, solution)
 end
 
-# Convert results to DataFrame
-df = DataFrame(lags', sim.endogenous_variables)
-# Add time column
-df[!, :period] = 1:nrow(df)
-# Select variables, convert to long format, and plot variables
-@pipe df |>
-    select(_, [:Y, :C, :YD, :period]) |>
-    stack(_, Not(:period), variable_name=:variable) |>
-    plot(
-        _,
-        x=:period,
-        y=:value,
-        color=:variable,
-        Geom.line
-    )
+# Plot selected endogenous variables over time
+plot(sim, lags; vars = [:Y, :C, :YD])
 
 function loglikelihood(results, model, exos, params_dict, unobserved, particles=10000)
     # return log(sum(...))

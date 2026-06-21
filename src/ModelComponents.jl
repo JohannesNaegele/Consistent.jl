@@ -77,9 +77,13 @@ Base.show(io::IO, eqs::Equations) = print(io, "Equations([", join(string.(eqs), 
 """
 Macro to specify the model equations. Use `begin ... end`.
 
+Lagged variables are written `x[-1]`, `x[-2]`, …. The difference operator `Δ` is
+available as sugar: `Δ(x)` expands to `x - x[-1]` and `Δ(x, n)` to `x - x[-n]`.
+
 # Example:
     @equations begin
         Y = G + C
+        Δ(H) = G - T   # same as: H - H[-1] = G - T
     end
 """
 macro equations(input...)
@@ -87,5 +91,6 @@ macro equations(input...)
     # cleanly and compare/hash by content
     ex = remove_blocks(MacroTools.striplines(input...))
     @assert (ex.head == :block) "Block input expected" # we need block input (begin ... end)
-    return Equations(deepcopy(ex.args))
+    # desugar the difference operator: Δ(x) -> x - x[-1]
+    return Equations(map(expand_diff, deepcopy(ex.args)))
 end

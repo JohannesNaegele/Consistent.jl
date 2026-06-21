@@ -48,7 +48,11 @@ function remove_blocks(expr::Expr)
         if typeof(arg) == Expr
             if arg.head == :block
                 if (length(arg.args) == 1)
-                    expr.args[i] = remove_blocks(arg.args[1])
+                    # `f(x) = rhs` (e.g. `Δ(M) = F`) parses as a function definition
+                    # with the rhs wrapped in a block; unwrap it (recursing only if
+                    # it is itself an expression).
+                    inner = arg.args[1]
+                    expr.args[i] = inner isa Expr ? remove_blocks(inner) : inner
                 else
                     error("Can not handle sub-blocks with multiple lines.")
                 end
@@ -102,6 +106,42 @@ function left_symbol(line::Expr)
     end
     # fallback
     return nothing
+end
+
+"""
+Lag a single (optionally already lagged) variable by `n` periods: `x -> x[-n]`
+and `x[-k] -> x[-(k+n)]`.
+"""
+function _lag(e, n::Integer)
+    if e isa Symbol
+        return Expr(:ref, e, -n)
+    elseif e isa Expr && e.head === :ref && length(e.args) == 2 && e.args[2] isa Integer
+        return Expr(:ref, e.args[1], e.args[2] - n)
+    else
+        error("Δ supports a single (optionally lagged) variable; got `$e`.")
+    end
+end
+
+"""
+Expand the difference operator `Δ`: `Δ(x)` becomes `x - x[-1]` and `Δ(x, n)`
+becomes `x - x[-n]`, where `x` is a single (optionally lagged) variable. This is
+pure syntactic sugar applied by [`@equations`](@ref).
+"""
+function expand_diff(x)
+    x isa Expr || return x
+    if x.head === :call && x.args[1] === :Δ
+        if length(x.args) == 2          # Δ(x)
+            arg = expand_diff(x.args[2])
+            return Expr(:call, :-, arg, _lag(arg, 1))
+        elseif length(x.args) == 3      # Δ(x, n)
+            arg, n = expand_diff(x.args[2]), x.args[3]
+            (n isa Integer && n > 0) || error("Δ(x, n): n must be a positive integer literal, got `$n`.")
+            return Expr(:call, :-, arg, _lag(arg, n))
+        else
+            error("Δ takes one or two arguments, got $(length(x.args) - 1).")
+        end
+    end
+    return Expr(x.head, map(expand_diff, x.args)...)
 end
 
 """

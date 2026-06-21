@@ -1,9 +1,6 @@
 using Consistent
-using DataFrames
-using Gadfly
-using Pipe
+using Plots
 using BenchmarkTools
-Gadfly.push_theme(:dark)
 
 # Define parameter values
 params_dict = @parameters begin
@@ -49,18 +46,5 @@ for i in 1:59
     lags = hcat(lags, solution)
 end
 
-# Convert results to DataFrame
-df = DataFrame(lags', my_first_model.endogenous_variables)
-# Add time column
-df[!, :period] = 1:nrow(df)
-# Select variables, convert to long format, and plot variables
-@pipe df |>
-    select(_, [:Y, :C, :YD, :period]) |>
-    stack(_, Not(:period), variable_name=:variable) |>
-    plot(
-        _,
-        x=:period,
-        y=:value,
-        color=:variable,
-        Geom.line
-    )
+# Plot selected endogenous variables over time (uses the package's plot recipe)
+plot(my_first_model, lags; vars = [:Y, :C, :YD])

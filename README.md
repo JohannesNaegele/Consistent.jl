@@ -47,6 +47,8 @@ Note also that the model is not aware of any concrete values of parameters or ex
 
 Lastly, the specification of endogenous variables is *optional* and might be omitted if is much effort for larger models. However, it enables easier debugging. If not endogenous variables are not specified, the package will assume the symbol farthest on the left hand side of each equation to be endogenous.
 
+Lagged values are written `x[-1]`, `x[-2]`, …, and the difference operator `Δ` is available as sugar: `Δ(x)` expands to `x - x[-1]` and `Δ(x, n)` to `x - x[-n]`.
+
 ### Model solution
 If we want to solve a model we need data on
 1. exogenous variables (and their lags)
@@ -72,32 +74,22 @@ for i in 1:59
 end
 ```
 
-### Data handling and plotting
-`DataFrames` and `Pipe` give us functionality similar to R's `dplyr`; the package ```Gadfly``` is very similar to R's `ggplots2`:
+### Plotting
+The package ships a [plot recipe](https://docs.juliaplots.org/stable/recipes/)
+(defined with the lightweight `RecipesBase`, so `Plots` is not a dependency). Load
+`Plots` and plot a solved trajectory directly — rows of the results matrix are the
+endogenous variables, columns are periods:
 
 ```julia
-using DataFrames
-using Pipe
-using Gadfly
+using Plots
 
-# Convert results to DataFrame
-df = DataFrame(lags', my_first_model.endogenous_variables)
-# Add time column
-df[!, :period] = 1:nrow(df)
-# Select variables, convert to long format, and plot variables
-@pipe df |>
-    select(_, [:Y, :C, :YD, :period]) |>
-    stack(_, Not(:period), variable_name=:variable) |>
-    plot(
-        _,
-        x=:period,
-        y=:value,
-        color=:variable,
-        Geom.line
-    )
+# `lags` here is the endogenous-variables × periods results matrix
+plot(my_first_model, lags)                       # all endogenous variables
+plot(my_first_model, lags; vars = [:Y, :C, :YD]) # a selection
 ```
 
-An example with actual data can be found here.
+For richer data wrangling, `DataFrames` works as usual
+(`DataFrame(lags', my_first_model.endogenous_variables)`).
 
 `solve` returns the vector of solved endogenous variable values (ordered as in
 `model.endogenous_variables`). It is a method of `CommonSolve.solve` — the same

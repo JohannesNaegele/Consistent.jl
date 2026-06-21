@@ -83,8 +83,8 @@ firms₄ = model(
     end
 )
 
-# TODO: Δ operator
 # Box 11.6: Households equations
+# (the difference operator is available now: Δ(x) ≡ x - x[-1], see CG below)
 hh₁ = model(
     exos=@variables(rₗ, Pₑ, ed, rₘ, Mₕ, rb, Bhd, BLs, Lhd, Pbl, BLd, OFb, p),
     eqs=@equations begin
@@ -92,7 +92,7 @@ hh₁ = model(
         TX = θ * YP                       # 11.46: Income taxes
         YDᵣ = YP - TX - rₗ[-1] * Lhd[-1]      # 11.47: Regular disposable income
         YDhs = YDᵣ + CG                    # 11.48: Haig-Simons disposable income
-        CG = (Pbl - Pbl[-1]) * BLd[-1] + (Pₑ - Pₑ[-1]) * ed[-1] + (OFb - OFb[-1]) # 11.49: Capital gains
+        CG = Δ(Pbl) * BLd[-1] + Δ(Pₑ) * ed[-1] + Δ(OFb) # 11.49: Capital gains
         # 11.50: Wealth
         V = V[-1] + YDᵣ - CONS + (Pbl - Pbl[-1]) * BLd[-1] + (Pₑ - Pₑ[-1]) * ed[-1] + (OFb - OFb[-1]) # ???
         Vk = V / p                           # 11.51: Real stock of wealth

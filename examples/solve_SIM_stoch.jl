@@ -36,12 +36,5 @@ plot(simulation[:, 1])
 violin(transpose(simulation[1:50, :]), linewidth = 0, legend = false)
 # plot(simulation[1:30,1:1000], legend = false, seriestype = :scatter)
 
-# DIS steady state
-initial_guess = fill(1.0, length(sfc_model.endogenous_variables))
-lags = fill(0.1, (length(sfc_model.endogenous_variables), 1)) # quite arbitrary
-param_values = map(x -> get(values, x, nothing), sfc_model.parameters)
-a = solve(initial_guess, lags, Matrix[], param_values)
-for i in 1:1000
-    a = solve(initial_guess, a[:,:], Matrix[], param_values)
-end
-a
+# TODO: turn this Monte-Carlo sketch into a proper probabilistic SIM example once
+# the probabilistic-model machinery lands (see GitHub issue #40).
