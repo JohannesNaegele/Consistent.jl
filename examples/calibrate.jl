@@ -13,15 +13,16 @@ df = DataFrame(:G => 20 .+ 10 * rand(60))
 scen = Consistent.SIM()
 sim = scen.model
 exos = permutedims(Matrix(df[!, sim.exogenous_variables]))
-lags = scen.lags
 params_dict = scen.params
 param_values = map(x -> params_dict[x], sim.parameters)
 
-# Solve model for 59 periods
+# Solve model for 59 periods. Preallocate + mutate columns (rather than
+# `lags = hcat(lags, ...)`) so the top-level `for` loop doesn't trip Julia's
+# soft-scope rule for reassigning a global.
+lags = fill(0.0, length(sim.endogenous_variables), 60)
 for i in 1:59
     # assume we have some randomness in our parameters
-    solution = Consistent.solve(sim, lags, exos[:, begin:i], param_values + 0.05 * rand(3))
-    lags = hcat(lags, solution)
+    lags[:, i + 1] = Consistent.solve(sim, lags[:, i], exos[:, begin:i], param_values + 0.05 * rand(3))
 end
 
 # Convert results to DataFrame
@@ -74,7 +75,7 @@ function calibrate(data, model, opt_vars, opt_params, init_params)
     adtype = Optimization.AutoZygote()
     optf = Optimization.OptimizationFunction((x, p) -> loss(x), adtype)
     optprob = Optimization.OptimizationProblem(optf, initial, lb = [0.0, 0.0], ub = [1.0, 1.0])
-    res = Optimization.solve(optprob, SAMIN(), maxiters = 50000)
+    res = Optimization.solve(optprob, SAMIN(), maxiters = 2000)  # raise for a tighter fit
     return res
 end
 

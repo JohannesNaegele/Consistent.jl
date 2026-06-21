@@ -36,14 +36,14 @@ my_first_model = model(
 # Data on exogenous parameter G
 exos = [20.0][:, :]
 # Lagged values of endogenous variables are all 0.0
-lags = fill(0.0, length(my_first_model.endogenous_variables), 1)
+lags = fill(0.0, length(my_first_model.endogenous_variables), 60)
 # Get raw parameter values
 param_values = map(x -> params_dict[x], my_first_model.parameters)
 
 # Solve model for 59 periods
 for i in 1:59
-    solution = solve(my_first_model, lags, exos, param_values)
-    lags = hcat(lags, solution)
+    solution = solve(my_first_model, lags[:, i], exos, param_values)
+    lags[:, i + 1] = solution
 end
 
 # Plot selected endogenous variables over time (uses the package's plot recipe)

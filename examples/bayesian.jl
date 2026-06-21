@@ -1,11 +1,10 @@
 # Bayesian estimation of a stock-flow consistent model with Turing.
 #
-# Needs the Turing extension and the differentiable-solve stack:
-#   using Turing, SciMLSensitivity, Enzyme
+# Needs the Turing extension. The default sampler uses ForwardDiff (no extra
+# packages); for the reverse-mode backends, also load SciMLSensitivity (adjoints
+# for the solve) and Enzyme or Mooncake — see the sampling section below.
 using Consistent
 using Turing
-using SciMLSensitivity        # registers the adjoints that make the solve differentiable
-using Enzyme
 using Random
 Random.seed!(1)
 
@@ -41,9 +40,11 @@ bm = bayesian_model(sm, data; lags = lags, exos = exos,
                     fixed = Consistent.OrderedDict(:θ => 0.2))
 
 # --- sample the posterior --------------------------------------------------
-# Enzyme (reverse mode) — needs runtime activity enabled:
-adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse))
-# Simpler alternative that works out of the box: adtype = AutoForwardDiff()
+# ForwardDiff works out of the box and is fast for this small model. Reverse-mode
+# backends also work (load the package + SciMLSensitivity first):
+#   using SciMLSensitivity, Enzyme;   adtype = AutoEnzyme(; mode = Enzyme.set_runtime_activity(Enzyme.Reverse))
+#   using SciMLSensitivity, Mooncake; adtype = AutoMooncake(; config = nothing)
+adtype = AutoForwardDiff()
 chain = sample(bm, NUTS(0.65; adtype), 500)
 
 # Posterior should concentrate near α_1 = 0.6, α_2 = 0.4

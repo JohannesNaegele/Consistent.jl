@@ -5,7 +5,7 @@ using Plots
 using StatsPlots
 
 # SIM_stoch
-scen = SIMStoch()           # a Scenario: model + calibration + data
+scen = Consistent.SIMStoch()  # a Scenario: model + calibration + data
 sim = scen.model
 g_0 = 20.0
 u_G = rand(Normal(0, 1), 1000 * 100)
